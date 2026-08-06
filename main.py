@@ -28,6 +28,7 @@ clock = pygame.time.Clock()
 
 title_font = pygame.font.SysFont(None, 70)
 button_font = pygame.font.SysFont(None, 40)
+small_font = pygame.font.SysFont(None, 32)
 mark_font = pygame.font.SysFont(None, 150)
 
 # which page we are on: "home", "difficulty" or "game"
@@ -59,6 +60,16 @@ difficulty_buttons = [
     [pygame.Rect(150, 330, 300, 70), "Medium"],
     [pygame.Rect(150, 430, 300, 70), "Impossible"],
 ]
+
+# the restart button in the top-left corner of the game page
+restart_rect = pygame.Rect(20, 20, 130, 45)
+
+
+def new_board():
+    """Give back a fresh empty board."""
+    return [["", "", ""],
+            ["", "", ""],
+            ["", "", ""]]
 
 
 def draw_text(text, font, color, center):
@@ -163,9 +174,7 @@ while running:
                         else:
                             mode = "2 Players"
                             page = "game"
-                            board = [["", "", ""],
-                                     ["", "", ""],
-                                     ["", "", ""]]
+                            board = new_board()
                             turn = "X"
                             winner = ""
 
@@ -174,21 +183,24 @@ while running:
                     if rect.collidepoint(event.pos):
                         mode = label
                         page = "game"
-                        board = [["", "", ""],
-                                 ["", "", ""],
-                                 ["", "", ""]]
+                        board = new_board()
                         turn = "X"
                         winner = ""
 
             elif page == "game":
-                row, col = clicked_cell(event.pos)
-                if winner == "" and row != -1 and board[row][col] == "":
-                    board[row][col] = turn
-                    winner = check_winner()
-                    if turn == "X":
-                        turn = "O"
-                    else:
-                        turn = "X"
+                if restart_rect.collidepoint(event.pos):
+                    board = new_board()
+                    turn = "X"
+                    winner = ""
+                else:
+                    row, col = clicked_cell(event.pos)
+                    if winner == "" and row != -1 and board[row][col] == "":
+                        board[row][col] = turn
+                        winner = check_winner()
+                        if turn == "X":
+                            turn = "O"
+                        else:
+                            turn = "X"
 
     # 2) UPDATE (nothing yet)
 
@@ -212,6 +224,14 @@ while running:
             draw_text(winner + " wins!", title_font, TITLE_COLOR, (WIDTH // 2, 50))
         draw_grid()
         draw_marks()
+
+        # the restart button
+        if restart_rect.collidepoint(mouse_pos):
+            color = BUTTON_HOVER
+        else:
+            color = BUTTON_COLOR
+        pygame.draw.rect(screen, color, restart_rect, border_radius=10)
+        draw_text("Restart", small_font, BUTTON_TEXT, restart_rect.center)
 
     pygame.display.flip()
     clock.tick(FPS)
