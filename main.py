@@ -35,8 +35,8 @@ FOAM_FRAMES = 16                           # the sheet holds 16 frames in a row
 # and these are its rows from top to bottom
 ROW_GRASS_TOP = 0      # grass with a bushy top edge
 ROW_GRASS_MID = 1      # plain grass
-ROW_GRASS_BUSH = 3     # bushy bottom edge with the cliff peeking out
-ROW_CLIFF = 5          # the rocky cliff base
+ROW_GRASS_BUSH = 2     # the plateau's bushy bottom edge
+ROW_CLIFF = 5          # the rocky cliff base with rounded feet
 
 # --- setup ---
 pygame.init()
