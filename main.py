@@ -9,6 +9,8 @@ BUTTON_HOVER = (185, 140, 95)
 BUTTON_TEXT = (255, 255, 255)
 TITLE_COLOR = (90, 60, 40)
 GRID_COLOR = (90, 60, 40)
+X_COLOR = (60, 90, 160)
+O_COLOR = (170, 70, 60)
 FPS = 60
 
 # --- board layout ---
@@ -26,12 +28,22 @@ clock = pygame.time.Clock()
 
 title_font = pygame.font.SysFont(None, 70)
 button_font = pygame.font.SysFont(None, 40)
+mark_font = pygame.font.SysFont(None, 150)
 
 # which page we are on: "home", "difficulty" or "game"
 page = "home"
 
 # which mode was picked: "2 Players", "Easy", "Medium" or "Impossible"
 mode = ""
+
+# the board: 9 cells, "" means empty. Index 0 is top-left, 8 is bottom-right:
+#   0 | 1 | 2
+#   3 | 4 | 5
+#   6 | 7 | 8
+board = ["", "", "", "", "", "", "", "", ""]
+
+# whose turn it is: "X" or "O"
+turn = "X"
 
 # each button is [rectangle, label]
 home_buttons = [
@@ -75,6 +87,31 @@ def draw_grid():
         pygame.draw.line(screen, GRID_COLOR, (BOARD_X, y), (BOARD_X + BOARD_SIZE, y), LINE_WIDTH)
 
 
+def clicked_cell(pos):
+    """Turn a mouse position into a cell index 0-8, or -1 if off the board."""
+    col = (pos[0] - BOARD_X) // CELL
+    row = (pos[1] - BOARD_Y) // CELL
+    if col < 0 or col > 2 or row < 0 or row > 2:
+        return -1
+    return row * 3 + col
+
+
+def draw_marks():
+    """Draw the X's and O's stored in the board list."""
+    for index in range(9):
+        if board[index] == "":
+            continue
+        row = index // 3
+        col = index % 3
+        center_x = BOARD_X + col * CELL + CELL // 2
+        center_y = BOARD_Y + row * CELL + CELL // 2
+        if board[index] == "X":
+            color = X_COLOR
+        else:
+            color = O_COLOR
+        draw_text(board[index], mark_font, color, (center_x, center_y))
+
+
 # --- game loop ---
 running = True
 while running:
@@ -94,12 +131,25 @@ while running:
                         else:
                             mode = "2 Players"
                             page = "game"
+                            board = ["", "", "", "", "", "", "", "", ""]
+                            turn = "X"
 
             elif page == "difficulty":
                 for rect, label in difficulty_buttons:
                     if rect.collidepoint(event.pos):
                         mode = label
                         page = "game"
+                        board = ["", "", "", "", "", "", "", "", ""]
+                        turn = "X"
+
+            elif page == "game":
+                index = clicked_cell(event.pos)
+                if index != -1 and board[index] == "":
+                    board[index] = turn
+                    if turn == "X":
+                        turn = "O"
+                    else:
+                        turn = "X"
 
     # 2) UPDATE (nothing yet)
 
@@ -115,8 +165,9 @@ while running:
         draw_buttons(difficulty_buttons, mouse_pos)
 
     elif page == "game":
-        draw_text(mode, button_font, TITLE_COLOR, (WIDTH // 2, 50))
+        draw_text(mode + "  -  " + turn + "'s turn", button_font, TITLE_COLOR, (WIDTH // 2, 50))
         draw_grid()
+        draw_marks()
 
     pygame.display.flip()
     clock.tick(FPS)
