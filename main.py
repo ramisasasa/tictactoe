@@ -36,11 +36,11 @@ page = "home"
 # which mode was picked: "2 Players", "Easy", "Medium" or "Impossible"
 mode = ""
 
-# the board: 9 cells, "" means empty. Index 0 is top-left, 8 is bottom-right:
-#   0 | 1 | 2
-#   3 | 4 | 5
-#   6 | 7 | 8
-board = ["", "", "", "", "", "", "", "", ""]
+# the board: 3 rows of 3 cells, "" means empty.
+# board[row][col] -> board[0][0] is top-left, board[2][2] is bottom-right
+board = [["", "", ""],
+         ["", "", ""],
+         ["", "", ""]]
 
 # whose turn it is: "X" or "O"
 turn = "X"
@@ -88,28 +88,28 @@ def draw_grid():
 
 
 def clicked_cell(pos):
-    """Turn a mouse position into a cell index 0-8, or -1 if off the board."""
+    """Turn a mouse position into (row, col), or (-1, -1) if off the board."""
     col = (pos[0] - BOARD_X) // CELL
     row = (pos[1] - BOARD_Y) // CELL
     if col < 0 or col > 2 or row < 0 or row > 2:
-        return -1
-    return row * 3 + col
+        return -1, -1
+    return row, col
 
 
 def draw_marks():
-    """Draw the X's and O's stored in the board list."""
-    for index in range(9):
-        if board[index] == "":
-            continue
-        row = index // 3
-        col = index % 3
-        center_x = BOARD_X + col * CELL + CELL // 2
-        center_y = BOARD_Y + row * CELL + CELL // 2
-        if board[index] == "X":
-            color = X_COLOR
-        else:
-            color = O_COLOR
-        draw_text(board[index], mark_font, color, (center_x, center_y))
+    """Draw the X's and O's stored in the board."""
+    for row in range(3):
+        for col in range(3):
+            mark = board[row][col]
+            if mark == "":
+                continue
+            center_x = BOARD_X + col * CELL + CELL // 2
+            center_y = BOARD_Y + row * CELL + CELL // 2
+            if mark == "X":
+                color = X_COLOR
+            else:
+                color = O_COLOR
+            draw_text(mark, mark_font, color, (center_x, center_y))
 
 
 # --- game loop ---
@@ -131,7 +131,9 @@ while running:
                         else:
                             mode = "2 Players"
                             page = "game"
-                            board = ["", "", "", "", "", "", "", "", ""]
+                            board = [["", "", ""],
+                                     ["", "", ""],
+                                     ["", "", ""]]
                             turn = "X"
 
             elif page == "difficulty":
@@ -139,13 +141,15 @@ while running:
                     if rect.collidepoint(event.pos):
                         mode = label
                         page = "game"
-                        board = ["", "", "", "", "", "", "", "", ""]
+                        board = [["", "", ""],
+                                 ["", "", ""],
+                                 ["", "", ""]]
                         turn = "X"
 
             elif page == "game":
-                index = clicked_cell(event.pos)
-                if index != -1 and board[index] == "":
-                    board[index] = turn
+                row, col = clicked_cell(event.pos)
+                if row != -1 and board[row][col] == "":
+                    board[row][col] = turn
                     if turn == "X":
                         turn = "O"
                     else:
