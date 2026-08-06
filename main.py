@@ -4,6 +4,7 @@ import pygame
 WIDTH = 600
 HEIGHT = 600
 BACKGROUND = (240, 230, 200)
+WATER_COLOR = (71, 171, 169)
 BUTTON_COLOR = (150, 110, 70)
 BUTTON_HOVER = (185, 140, 95)
 BUTTON_TEXT = (255, 255, 255)
@@ -20,11 +21,24 @@ BOARD_Y = 110                         # top edge
 CELL = BOARD_SIZE // 3                # one cell is 150x150
 LINE_WIDTH = 6
 
+# --- island layout (home page) ---
+TILE = 64                                  # one terrain tile is 64x64 pixels
+ISLAND_COLS = 8                            # island is 8 tiles wide
+ISLAND_ROWS = 6                            # and 6 tiles tall
+ISLAND_X = (WIDTH - ISLAND_COLS * TILE) // 2
+ISLAND_Y = 150
+FOAM_SIZE = 192                            # one foam frame is 192x192
+FOAM_FRAMES = 16                           # the sheet holds 16 frames in a row
+
 # --- setup ---
 pygame.init()
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Tic Tac Toe")
 clock = pygame.time.Clock()
+
+# --- images ---
+tilemap = pygame.image.load("assets/tilemap.png").convert_alpha()
+foam_sheet = pygame.image.load("assets/water_foam.png").convert_alpha()
 
 title_font = pygame.font.SysFont(None, 70)
 button_font = pygame.font.SysFont(None, 40)
@@ -108,6 +122,44 @@ def clicked_cell(pos):
     if col < 0 or col > 2 or row < 0 or row > 2:
         return -1, -1
     return row, col
+
+
+def draw_island():
+    """Draw the animated foam, then the grass island on top of it."""
+    # which foam frame to show right now (changes over time = animation)
+    frame = (pygame.time.get_ticks() // 120) % FOAM_FRAMES
+    foam = foam_sheet.subsurface((frame * FOAM_SIZE, 0, FOAM_SIZE, FOAM_SIZE))
+
+    # 1) foam first, under every tile on the island's border
+    for ty in range(ISLAND_ROWS):
+        for tx in range(ISLAND_COLS):
+            on_border = tx == 0 or ty == 0 or tx == ISLAND_COLS - 1 or ty == ISLAND_ROWS - 1
+            if on_border:
+                # the foam picture is bigger than a tile, so shift it
+                # so its middle sits on the tile's middle
+                x = ISLAND_X + tx * TILE - (FOAM_SIZE - TILE) // 2
+                y = ISLAND_Y + ty * TILE - (FOAM_SIZE - TILE) // 2
+                screen.blit(foam, (x, y))
+
+    # 2) grass tiles on top
+    for ty in range(ISLAND_ROWS):
+        for tx in range(ISLAND_COLS):
+            # pick which tile to cut from the tilemap:
+            # column 0 = left edge, 1 = middle, 2 = right edge (same idea for rows)
+            if tx == 0:
+                sx = 0
+            elif tx == ISLAND_COLS - 1:
+                sx = 2
+            else:
+                sx = 1
+            if ty == 0:
+                sy = 0
+            elif ty == ISLAND_ROWS - 1:
+                sy = 2
+            else:
+                sy = 1
+            tile = tilemap.subsurface((sx * TILE, sy * TILE, TILE, TILE))
+            screen.blit(tile, (ISLAND_X + tx * TILE, ISLAND_Y + ty * TILE))
 
 
 def check_winner():
@@ -205,17 +257,19 @@ while running:
     # 2) UPDATE (nothing yet)
 
     # 3) DRAW
-    screen.fill(BACKGROUND)
-
     if page == "home":
-        draw_text("TIC TAC TOE", title_font, TITLE_COLOR, (WIDTH // 2, 150))
+        screen.fill(WATER_COLOR)
+        draw_island()
+        draw_text("TIC TAC TOE", title_font, TITLE_COLOR, (WIDTH // 2, 210))
         draw_buttons(home_buttons, mouse_pos)
 
     elif page == "difficulty":
+        screen.fill(BACKGROUND)
         draw_text("Choose Difficulty", title_font, TITLE_COLOR, (WIDTH // 2, 130))
         draw_buttons(difficulty_buttons, mouse_pos)
 
     elif page == "game":
+        screen.fill(BACKGROUND)
         if winner == "":
             draw_text(mode + "  -  " + turn + "'s turn", button_font, TITLE_COLOR, (WIDTH // 2, 50))
         elif winner == "Tie":
