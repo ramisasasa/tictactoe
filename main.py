@@ -24,11 +24,19 @@ LINE_WIDTH = 6
 # --- island layout (home page) ---
 TILE = 64                                  # one terrain tile is 64x64 pixels
 ISLAND_COLS = 8                            # island is 8 tiles wide
-ISLAND_ROWS = 6                            # and 6 tiles tall
+ISLAND_ROWS = 6                            # 5 grass rows + 1 cliff row
 ISLAND_X = (WIDTH - ISLAND_COLS * TILE) // 2
 ISLAND_Y = 150
 FOAM_SIZE = 192                            # one foam frame is 192x192
 FOAM_FRAMES = 16                           # the sheet holds 16 frames in a row
+
+# where the elevated-island tiles live in the tilemap (tile coordinates):
+# columns 5,6,7 are the left edge / middle / right edge of the island,
+# and these are its rows from top to bottom
+ROW_GRASS_TOP = 0      # grass with a bushy top edge
+ROW_GRASS_MID = 1      # plain grass
+ROW_GRASS_BUSH = 3     # bushy bottom edge with the cliff peeking out
+ROW_CLIFF = 5          # the rocky cliff base
 
 # --- setup ---
 pygame.init()
@@ -39,6 +47,9 @@ clock = pygame.time.Clock()
 # --- images ---
 tilemap = pygame.image.load("assets/tilemap.png").convert_alpha()
 foam_sheet = pygame.image.load("assets/water_foam.png").convert_alpha()
+ribbon_title = pygame.image.load("assets/ribbon_title.png").convert_alpha()
+ribbon_button = pygame.image.load("assets/ribbon_button.png").convert_alpha()
+ribbon_button_hover = pygame.image.load("assets/ribbon_button_hover.png").convert_alpha()
 
 title_font = pygame.font.SysFont(None, 70)
 button_font = pygame.font.SysFont(None, 40)
@@ -64,9 +75,10 @@ turn = "X"
 winner = ""
 
 # each button is [rectangle, label]
+# home buttons are ribbon images, so the rects match the ribbon size (448x128)
 home_buttons = [
-    [pygame.Rect(150, 260, 300, 70), "2 Players"],
-    [pygame.Rect(150, 360, 300, 70), "Play vs Computer"],
+    [pygame.Rect(76, 205, 448, 128), "2 Players"],
+    [pygame.Rect(76, 345, 448, 128), "Play vs Computer"],
 ]
 
 difficulty_buttons = [
@@ -125,7 +137,14 @@ def clicked_cell(pos):
 
 
 def draw_island():
-    """Draw the animated foam, then the grass island on top of it."""
+    """Draw the animated foam, then the elevated grass island on top of it."""
+    # top to bottom: bushy top, plain grass middle, bushy edge, rocky cliff
+    row_types = [ROW_GRASS_TOP]
+    for i in range(ISLAND_ROWS - 3):
+        row_types.append(ROW_GRASS_MID)
+    row_types.append(ROW_GRASS_BUSH)
+    row_types.append(ROW_CLIFF)
+
     # which foam frame to show right now (changes over time = animation)
     frame = (pygame.time.get_ticks() // 120) % FOAM_FRAMES
     foam = foam_sheet.subsurface((frame * FOAM_SIZE, 0, FOAM_SIZE, FOAM_SIZE))
@@ -141,23 +160,17 @@ def draw_island():
                 y = ISLAND_Y + ty * TILE - (FOAM_SIZE - TILE) // 2
                 screen.blit(foam, (x, y))
 
-    # 2) grass tiles on top
+    # 2) terrain tiles on top
     for ty in range(ISLAND_ROWS):
         for tx in range(ISLAND_COLS):
-            # pick which tile to cut from the tilemap:
-            # column 0 = left edge, 1 = middle, 2 = right edge (same idea for rows)
+            # tilemap column: 5 = left edge, 6 = middle, 7 = right edge
             if tx == 0:
-                sx = 0
+                sx = 5
             elif tx == ISLAND_COLS - 1:
-                sx = 2
+                sx = 7
             else:
-                sx = 1
-            if ty == 0:
-                sy = 0
-            elif ty == ISLAND_ROWS - 1:
-                sy = 2
-            else:
-                sy = 1
+                sx = 6
+            sy = row_types[ty]
             tile = tilemap.subsurface((sx * TILE, sy * TILE, TILE, TILE))
             screen.blit(tile, (ISLAND_X + tx * TILE, ISLAND_Y + ty * TILE))
 
@@ -260,8 +273,18 @@ while running:
     if page == "home":
         screen.fill(WATER_COLOR)
         draw_island()
-        draw_text("TIC TAC TOE", title_font, TITLE_COLOR, (WIDTH // 2, 210))
-        draw_buttons(home_buttons, mouse_pos)
+
+        # title on the red ribbon
+        screen.blit(ribbon_title, ((WIDTH - 512) // 2, 30))
+        draw_text("TIC TAC TOE", title_font, BUTTON_TEXT, (WIDTH // 2, 86))
+
+        # mode buttons on blue ribbons (yellow when hovered)
+        for rect, label in home_buttons:
+            if rect.collidepoint(mouse_pos):
+                screen.blit(ribbon_button_hover, rect)
+            else:
+                screen.blit(ribbon_button, rect)
+            draw_text(label, button_font, BUTTON_TEXT, (rect.centerx, rect.centery - 8))
 
     elif page == "difficulty":
         screen.fill(BACKGROUND)
