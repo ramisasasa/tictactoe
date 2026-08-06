@@ -8,7 +8,15 @@ BUTTON_COLOR = (150, 110, 70)
 BUTTON_HOVER = (185, 140, 95)
 BUTTON_TEXT = (255, 255, 255)
 TITLE_COLOR = (90, 60, 40)
+GRID_COLOR = (90, 60, 40)
 FPS = 60
+
+# --- board layout ---
+BOARD_SIZE = 450                      # the grid is 450x450 pixels
+BOARD_X = (WIDTH - BOARD_SIZE) // 2   # left edge (centers it: 75)
+BOARD_Y = 110                         # top edge
+CELL = BOARD_SIZE // 3                # one cell is 150x150
+LINE_WIDTH = 6
 
 # --- setup ---
 pygame.init()
@@ -19,8 +27,11 @@ clock = pygame.time.Clock()
 title_font = pygame.font.SysFont(None, 70)
 button_font = pygame.font.SysFont(None, 40)
 
-# which page we are on: "home" or "difficulty"
+# which page we are on: "home", "difficulty" or "game"
 page = "home"
+
+# which mode was picked: "2 Players", "Easy", "Medium" or "Impossible"
+mode = ""
 
 # each button is [rectangle, label]
 home_buttons = [
@@ -53,6 +64,17 @@ def draw_buttons(buttons, mouse_pos):
         draw_text(label, button_font, BUTTON_TEXT, rect.center)
 
 
+def draw_grid():
+    """Draw the four inner lines of the tic-tac-toe board."""
+    for i in range(1, 3):
+        # vertical line number i
+        x = BOARD_X + i * CELL
+        pygame.draw.line(screen, GRID_COLOR, (x, BOARD_Y), (x, BOARD_Y + BOARD_SIZE), LINE_WIDTH)
+        # horizontal line number i
+        y = BOARD_Y + i * CELL
+        pygame.draw.line(screen, GRID_COLOR, (BOARD_X, y), (BOARD_X + BOARD_SIZE, y), LINE_WIDTH)
+
+
 # --- game loop ---
 running = True
 while running:
@@ -70,12 +92,14 @@ while running:
                         if label == "Play vs Computer":
                             page = "difficulty"
                         else:
-                            print(label + " was clicked")
+                            mode = "2 Players"
+                            page = "game"
 
             elif page == "difficulty":
                 for rect, label in difficulty_buttons:
                     if rect.collidepoint(event.pos):
-                        print(label + " was clicked")
+                        mode = label
+                        page = "game"
 
     # 2) UPDATE (nothing yet)
 
@@ -89,6 +113,10 @@ while running:
     elif page == "difficulty":
         draw_text("Choose Difficulty", title_font, TITLE_COLOR, (WIDTH // 2, 130))
         draw_buttons(difficulty_buttons, mouse_pos)
+
+    elif page == "game":
+        draw_text(mode, button_font, TITLE_COLOR, (WIDTH // 2, 50))
+        draw_grid()
 
     pygame.display.flip()
     clock.tick(FPS)
