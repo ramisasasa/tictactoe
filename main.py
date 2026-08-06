@@ -45,6 +45,9 @@ board = [["", "", ""],
 # whose turn it is: "X" or "O"
 turn = "X"
 
+# how the game ended: "" = still going, "X" or "O" = that player won, "Tie"
+winner = ""
+
 # each button is [rectangle, label]
 home_buttons = [
     [pygame.Rect(150, 260, 300, 70), "2 Players"],
@@ -96,6 +99,35 @@ def clicked_cell(pos):
     return row, col
 
 
+def check_winner():
+    """Look at the board and return "X", "O", "Tie", or "" (game still going)."""
+    # 1) rows: three equal marks side by side
+    for row in range(3):
+        if board[row][0] != "" and board[row][0] == board[row][1] == board[row][2]:
+            return board[row][0]
+
+    # 2) columns: three equal marks stacked up
+    for col in range(3):
+        if board[0][col] != "" and board[0][col] == board[1][col] == board[2][col]:
+            return board[0][col]
+
+    # 3) the two diagonals
+    if board[1][1] != "":
+        if board[0][0] == board[1][1] == board[2][2]:
+            return board[1][1]
+        if board[0][2] == board[1][1] == board[2][0]:
+            return board[1][1]
+
+    # 4) any empty cell left? then the game is still going
+    for row in range(3):
+        for col in range(3):
+            if board[row][col] == "":
+                return ""
+
+    # 5) board full and nobody won
+    return "Tie"
+
+
 def draw_marks():
     """Draw the X's and O's stored in the board."""
     for row in range(3):
@@ -135,6 +167,7 @@ while running:
                                      ["", "", ""],
                                      ["", "", ""]]
                             turn = "X"
+                            winner = ""
 
             elif page == "difficulty":
                 for rect, label in difficulty_buttons:
@@ -145,11 +178,13 @@ while running:
                                  ["", "", ""],
                                  ["", "", ""]]
                         turn = "X"
+                        winner = ""
 
             elif page == "game":
                 row, col = clicked_cell(event.pos)
-                if row != -1 and board[row][col] == "":
+                if winner == "" and row != -1 and board[row][col] == "":
                     board[row][col] = turn
+                    winner = check_winner()
                     if turn == "X":
                         turn = "O"
                     else:
@@ -169,7 +204,12 @@ while running:
         draw_buttons(difficulty_buttons, mouse_pos)
 
     elif page == "game":
-        draw_text(mode + "  -  " + turn + "'s turn", button_font, TITLE_COLOR, (WIDTH // 2, 50))
+        if winner == "":
+            draw_text(mode + "  -  " + turn + "'s turn", button_font, TITLE_COLOR, (WIDTH // 2, 50))
+        elif winner == "Tie":
+            draw_text("It's a tie!", title_font, TITLE_COLOR, (WIDTH // 2, 50))
+        else:
+            draw_text(winner + " wins!", title_font, TITLE_COLOR, (WIDTH // 2, 50))
         draw_grid()
         draw_marks()
 
