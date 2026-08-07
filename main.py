@@ -7,6 +7,9 @@ HEIGHT = 700
 WATER_COLOR = (71, 171, 169)
 BUTTON_TEXT = (255, 255, 255)
 TITLE_COLOR = (90, 60, 40)
+BANNER_TEXT_COLOR = (101, 52, 22)      # a richer chocolate brown for the home page title
+TURN_X_COLOR = (30, 90, 160)           # swords (X) turn - blue
+TURN_O_COLOR = (200, 60, 60)           # target (O) turn - red
 FPS = 60
 
 # --- board layout ---
@@ -531,7 +534,7 @@ while running:
 
         # the title is baked into the background - just add the text,
         # centered on the blank parchment banner
-        draw_text("TIC TAC TOE", title_font, TITLE_COLOR, (440, 114))
+        draw_text("TIC TAC TOE", title_font, BANNER_TEXT_COLOR, (440, 114))
 
         # mode buttons from the asset pack
         for rect, label, image, hover_image in home_buttons:
@@ -549,6 +552,8 @@ while running:
 
     elif page == "game":
         draw_battlefield()
+        # swords (X) get the blue text, target (O) gets the red text
+        turn_color = TURN_X_COLOR if turn == "X" else TURN_O_COLOR
         if winner == "":
             if mode == "2 Players":
                 status = turn + "'s turn"
@@ -556,11 +561,12 @@ while running:
                 status = "Your turn"
             else:
                 status = "Computer is thinking..."
-            draw_text(mode + "  -  " + status, button_font, TITLE_COLOR, (WIDTH // 2, 50))
+            draw_text(mode + "  -  " + status, button_font, turn_color, (WIDTH // 2, 50))
         elif winner == "Tie":
             draw_text("It's a tie!", title_font, TITLE_COLOR, (WIDTH // 2, 50))
         else:
-            draw_text(winner + " wins!", title_font, TITLE_COLOR, (WIDTH // 2, 50))
+            winner_color = TURN_X_COLOR if winner == "X" else TURN_O_COLOR
+            draw_text(winner + " wins!", title_font, winner_color, (WIDTH // 2, 50))
         draw_grid()
         draw_marks()
 
