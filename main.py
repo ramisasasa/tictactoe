@@ -1,4 +1,5 @@
 import pygame
+import random
 
 # --- settings (placeholder colors/sizes, we'll style this later) ---
 WIDTH = 900
@@ -78,7 +79,7 @@ ARCHER_RED_SPOT = (672, 174)
 BUTTON_W = 352                   # the button images are 352x80
 BUTTON_H = 80
 BUTTON_CX = 450                  # middle of the island
-BACK_SIZE = 64                   # the back arrow icon is 64x64
+BACK_W = 170                     # the return banner, sized to keep its shape
 
 # --- setup ---
 pygame.init()
@@ -116,10 +117,6 @@ btn_blue_hover = pygame.image.load("assets/btn_blue_hover.png").convert_alpha()
 btn_red = pygame.image.load("assets/btn_red.png").convert_alpha()
 btn_red_hover = pygame.image.load("assets/btn_red_hover.png").convert_alpha()
 bar_restart = pygame.image.load("assets/bar_restart.png").convert_alpha()
-icon_back = pygame.image.load("assets/icon_back.png").convert_alpha()
-# a slightly bigger copy to show when the mouse is over it
-icon_back_big = pygame.transform.scale(icon_back, (BACK_SIZE + 10, BACK_SIZE + 10))
-
 # the battlefield flanking the game-page board: a tileable grass square cut
 # from the terrain sheet, a soft shadow to ground each unit, and a row of
 # idle warriors standing guard on each side
@@ -157,6 +154,12 @@ def load_fitted(path, box_size):
     scale = box_size / max(trimmed.get_width(), trimmed.get_height())
     size = (round(trimmed.get_width() * scale), round(trimmed.get_height() * scale))
     return pygame.transform.smoothscale(trimmed, size)
+
+
+back_banner = load_fitted("assets/return.png", BACK_W)
+BACK_H = back_banner.get_height()
+# a slightly bigger copy to show when the mouse is over it
+back_banner_big = pygame.transform.smoothscale(back_banner, (BACK_W + 14, BACK_H + 14))
 
 
 def load_board(path, box_size):
@@ -223,8 +226,8 @@ difficulty_buttons = [
 # (170x42 to match the baked wood-bar image)
 restart_rect = pygame.Rect(WIDTH - 190, 25, 170, 42)
 
-# the back arrow, in the top-left corner of every page except home
-back_rect = pygame.Rect(20, 20, BACK_SIZE, BACK_SIZE)
+# the return banner, in the top-left corner of every page except home
+back_rect = pygame.Rect(20, 20, BACK_W, BACK_H)
 
 
 def new_board():
@@ -235,11 +238,12 @@ def new_board():
 
 
 def draw_back_button(mouse_pos):
-    """The arrow in the top-left corner; it grows a little when hovered."""
+    """The return banner in the top-left corner; it grows a little when hovered."""
     if back_rect.collidepoint(mouse_pos):
-        screen.blit(icon_back_big, (back_rect.x - 5, back_rect.y - 5))
+        screen.blit(back_banner_big, (back_rect.x - 7, back_rect.y - 7))
     else:
-        screen.blit(icon_back, back_rect)
+        screen.blit(back_banner, back_rect)
+    draw_text("Back", small_font, TITLE_COLOR, back_rect.center)
 
 
 def draw_text(text, font, color, center):
@@ -344,6 +348,79 @@ def check_winner():
     return "Tie"
 
 
+def empty_cells():
+    """A list of every (row, col) that is still empty."""
+    cells = []
+    for row in range(3):
+        for col in range(3):
+            if board[row][col] == "":
+                cells.append((row, col))
+    return cells
+
+
+def find_winning_move(mark):
+    """If placing `mark` in some empty cell would win right now, return
+    that (row, col). We just try each spot, ask check_winner(), then put
+    it back empty - if nothing wins, return None."""
+    for row, col in empty_cells():
+        board[row][col] = mark
+        won = check_winner() == mark
+        board[row][col] = ""
+        if won:
+            return row, col
+    return None
+
+
+def easy_move():
+    """Just pick a random empty cell."""
+    return random.choice(empty_cells())
+
+
+def medium_move():
+    """Win if we can, block if we must, otherwise play randomly."""
+    win = find_winning_move("O")
+    if win is not None:
+        return win
+    block = find_winning_move("X")
+    if block is not None:
+        return block
+    return random.choice(empty_cells())
+
+
+def impossible_move():
+    """Win if we can, block if we must. Otherwise take the strongest open
+    spot: the center first, then a corner, then whatever's left."""
+    win = find_winning_move("O")
+    if win is not None:
+        return win
+    block = find_winning_move("X")
+    if block is not None:
+        return block
+
+    if board[1][1] == "":
+        return 1, 1
+
+    corners = [(0, 0), (0, 2), (2, 0), (2, 2)]
+    open_corners = []
+    for row, col in corners:
+        if board[row][col] == "":
+            open_corners.append((row, col))
+    if open_corners:
+        return random.choice(open_corners)
+
+    return random.choice(empty_cells())
+
+
+def computer_move():
+    """Pick the computer's move for whichever difficulty is selected."""
+    if mode == "Easy":
+        return easy_move()
+    elif mode == "Medium":
+        return medium_move()
+    else:
+        return impossible_move()
+
+
 def draw_marks():
     """Draw the X's and O's stored in the board."""
     for row in range(3):
@@ -412,6 +489,14 @@ while running:
                         if turn == "X":
                             turn = "O"
                         else:
+                            turn = "X"
+
+                        # playing against the computer, and it's the
+                        # computer's (O's) turn now - let it move at once
+                        if winner == "" and mode != "2 Players" and turn == "O":
+                            row, col = computer_move()
+                            board[row][col] = "O"
+                            winner = check_winner()
                             turn = "X"
 
     # 2) UPDATE (nothing yet)
