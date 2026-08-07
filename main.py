@@ -9,7 +9,7 @@ BUTTON_COLOR = (150, 110, 70)
 BUTTON_HOVER = (185, 140, 95)
 BUTTON_TEXT = (255, 255, 255)
 TITLE_COLOR = (90, 60, 40)
-GRID_COLOR = (90, 60, 40)
+GRID_COLOR = (56, 34, 28)
 X_COLOR = (60, 90, 160)
 O_COLOR = (170, 70, 60)
 FPS = 60
@@ -85,6 +85,8 @@ btn_blue = pygame.image.load("assets/btn_blue.png").convert_alpha()
 btn_blue_hover = pygame.image.load("assets/btn_blue_hover.png").convert_alpha()
 btn_red = pygame.image.load("assets/btn_red.png").convert_alpha()
 btn_red_hover = pygame.image.load("assets/btn_red_hover.png").convert_alpha()
+board_wood = pygame.image.load("assets/board_wood.png").convert_alpha()
+bar_restart = pygame.image.load("assets/bar_restart.png").convert_alpha()
 icon_back = pygame.image.load("assets/icon_back.png").convert_alpha()
 # a slightly bigger copy to show when the mouse is over it
 icon_back_big = pygame.transform.scale(icon_back, (BACK_SIZE + 10, BACK_SIZE + 10))
@@ -129,7 +131,8 @@ difficulty_buttons = [
 ]
 
 # the restart button in the top-right corner of the game page
-restart_rect = pygame.Rect(WIDTH - 150, 25, 130, 45)
+# (170x42 to match the baked wood-bar image)
+restart_rect = pygame.Rect(WIDTH - 190, 25, 170, 42)
 
 # the back arrow, in the top-left corner of every page except home
 back_rect = pygame.Rect(20, 20, BACK_SIZE, BACK_SIZE)
@@ -169,7 +172,8 @@ def draw_buttons(buttons, mouse_pos):
 
 
 def draw_grid():
-    """Draw the four inner lines of the tic-tac-toe board."""
+    """Draw the wood board, then thin seam lines to mark the 9 cells."""
+    screen.blit(board_wood, (BOARD_X, BOARD_Y))
     for i in range(1, 3):
         # vertical line number i
         x = BOARD_X + i * CELL
@@ -344,12 +348,14 @@ while running:
         draw_grid()
         draw_marks()
 
-        # the restart button
+        # the restart button: the wood bar, a touch bigger on hover
         if restart_rect.collidepoint(mouse_pos):
-            color = BUTTON_HOVER
+            bar = pygame.transform.scale(bar_restart, (180, 45))
+            bar_rect = bar.get_rect(center=restart_rect.center)
         else:
-            color = BUTTON_COLOR
-        pygame.draw.rect(screen, color, restart_rect, border_radius=10)
+            bar = bar_restart
+            bar_rect = restart_rect
+        screen.blit(bar, bar_rect)
         draw_text("Restart", small_font, BUTTON_TEXT, restart_rect.center)
 
         draw_back_button(mouse_pos)
