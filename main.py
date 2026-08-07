@@ -28,6 +28,19 @@ PLAY_Y = BOARD_Y + PLAY_INSET
 CELL = PLAY_SIZE // 3                 # one cell's size
 LINE_WIDTH = 6
 
+# --- game page battlefield scenery ---
+GRASS_TILE = 64                       # one grass tile in the tilemap
+UNIT_SIZE = 110                       # warriors are drawn at this width/height
+UNIT_ANIM_SPEED = 160                 # ms per idle animation frame
+# the character doesn't fill its whole sprite frame - there's empty space
+# below its feet (measured: feet sit at 137 of 192px in the source frame)
+UNIT_FEET_Y = round(137 / 192 * UNIT_SIZE)
+
+# feet positions (x, y) for the units flanking the board - blue on the
+# left facing right, red on the right facing left
+BLUE_UNIT_SPOTS = [(78, 210), (78, 400), (78, 590)]
+RED_UNIT_SPOTS = [(822, 210), (822, 400), (822, 590)]
+
 # --- home page scenery ---
 # the background picture (736x864) is drawn at full size. BG_X centers the
 # island itself (it is not centered inside its own picture), and BG_Y
@@ -74,8 +87,8 @@ del pixels
 foam_sheet = pygame.image.load("assets/water_foam.png").convert_alpha()
 
 
-def load_archer(path, flip):
-    """Cut the 8 shooting frames out of an archer sheet, scaled to fit."""
+def load_frames(path, flip):
+    """Cut the 8 frames out of a unit spritesheet (192x192 each)."""
     sheet = pygame.image.load(path).convert_alpha()
     frames = []
     for i in range(8):
@@ -86,8 +99,8 @@ def load_archer(path, flip):
     return frames
 
 
-archer_blue = load_archer("assets/archer_blue.png", False)  # faces right
-archer_red = load_archer("assets/archer_red.png", True)     # flipped to face left
+archer_blue = load_frames("assets/archer_blue.png", False)  # faces right
+archer_red = load_frames("assets/archer_red.png", True)     # flipped to face left
 btn_blue = pygame.image.load("assets/btn_blue.png").convert_alpha()
 btn_blue_hover = pygame.image.load("assets/btn_blue_hover.png").convert_alpha()
 btn_red = pygame.image.load("assets/btn_red.png").convert_alpha()
@@ -96,6 +109,23 @@ bar_restart = pygame.image.load("assets/bar_restart.png").convert_alpha()
 icon_back = pygame.image.load("assets/icon_back.png").convert_alpha()
 # a slightly bigger copy to show when the mouse is over it
 icon_back_big = pygame.transform.scale(icon_back, (BACK_SIZE + 10, BACK_SIZE + 10))
+
+# the battlefield flanking the game-page board: a tileable grass square cut
+# from the terrain sheet, a soft shadow to ground each unit, and a row of
+# idle warriors standing guard on each side
+grass_tile = pygame.image.load("assets/tilemap.png").convert_alpha().subsurface((64, 64, 64, 64))
+unit_shadow = pygame.image.load("assets/unit_shadow.png").convert_alpha()
+unit_shadow = pygame.transform.scale(unit_shadow, (UNIT_SIZE, UNIT_SIZE // 3))
+
+
+def load_unit(path, flip):
+    """Like load_frames, but each frame is scaled down to UNIT_SIZE."""
+    frames = load_frames(path, flip)
+    return [pygame.transform.smoothscale(frame, (UNIT_SIZE, UNIT_SIZE)) for frame in frames]
+
+
+warrior_blue = load_unit("assets/warrior_blue_idle.png", False)  # faces right
+warrior_red = load_unit("assets/warrior_red_idle.png", True)     # flipped to face left
 
 
 def load_trimmed(path, size):
@@ -127,11 +157,10 @@ mark_x = load_fitted("assets/arrows1.png", MARK_BOX)
 mark_o = load_fitted("assets/target.png", MARK_BOX)
 MARKS = {"X": mark_x, "O": mark_o}
 
-FONT = "assets/fonts/Pixtura12.ttf"
-FONT_CONDENSED = "assets/fonts/Pixtura12Condensed.ttf"
+FONT = "assets/fonts/ThaleahFat.ttf"
 title_font = pygame.font.Font(FONT, 64)
-button_font = pygame.font.Font(FONT_CONDENSED, 34)
-small_font = pygame.font.Font(FONT_CONDENSED, 26)
+button_font = pygame.font.Font(FONT, 34)
+small_font = pygame.font.Font(FONT, 26)
 
 # which page we are on: "home", "difficulty" or "game"
 page = "home"
@@ -208,6 +237,24 @@ def draw_buttons(buttons, mouse_pos):
         draw_text(label, button_font, BUTTON_TEXT, rect.center)
 
 
+def draw_battlefield():
+    """Tile the grass, then stand a row of warriors on each side of the board."""
+    for y in range(0, HEIGHT, GRASS_TILE):
+        for x in range(0, WIDTH, GRASS_TILE):
+            screen.blit(grass_tile, (x, y))
+
+    frame = (pygame.time.get_ticks() // UNIT_ANIM_SPEED) % 8
+    for frames, spots in [(warrior_blue, BLUE_UNIT_SPOTS), (warrior_red, RED_UNIT_SPOTS)]:
+        for fx, fy in spots:
+            shadow_rect = unit_shadow.get_rect(center=(fx, fy))
+            screen.blit(unit_shadow, shadow_rect)
+            # the sprite frame has empty space below the character's own
+            # feet, so its actual feet sit at UNIT_FEET_Y, not the frame's
+            # bottom edge
+            unit_rect = frames[frame].get_rect(midtop=(fx, fy - UNIT_FEET_Y))
+            screen.blit(frames[frame], unit_rect)
+
+
 def draw_grid():
     """Draw the wood board, then thin seam lines across the play surface."""
     screen.blit(board_wood, (BOARD_X, BOARD_Y))
@@ -251,8 +298,6 @@ def draw_scenery():
     for frames, (fx, fy) in [(archer_blue, ARCHER_BLUE_SPOT), (archer_red, ARCHER_RED_SPOT)]:
         # position the frame so the archer's feet land on the spot
         screen.blit(frames[shot], (BG_X + fx - SPRITE // 2, BG_Y + fy - int(SPRITE * 0.78)))
-
-
 
 
 def check_winner():
@@ -375,7 +420,7 @@ while running:
         draw_back_button(mouse_pos)
 
     elif page == "game":
-        screen.fill(BACKGROUND)
+        draw_battlefield()
         if winner == "":
             draw_text(mode + "  -  " + turn + "'s turn", button_font, TITLE_COLOR, (WIDTH // 2, 50))
         elif winner == "Tie":
