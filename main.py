@@ -1,8 +1,8 @@
 import pygame
 
 # --- settings (placeholder colors/sizes, we'll style this later) ---
-WIDTH = 600
-HEIGHT = 600
+WIDTH = 900
+HEIGHT = 700
 BACKGROUND = (240, 230, 200)
 WATER_COLOR = (71, 171, 169)
 BUTTON_COLOR = (150, 110, 70)
@@ -17,7 +17,7 @@ FPS = 60
 # --- board layout ---
 BOARD_SIZE = 450                      # the grid is 450x450 pixels
 BOARD_X = (WIDTH - BOARD_SIZE) // 2   # left edge (centers it: 75)
-BOARD_Y = 110                         # top edge
+BOARD_Y = 130                         # top edge
 CELL = BOARD_SIZE // 3                # one cell is 150x150
 LINE_WIDTH = 6
 
@@ -38,10 +38,10 @@ ROW_CLIFF_BASE = 5     # rocky cliff base with rounded feet
 # the coastline: each island is [x, y, columns, middle rows, cliff rows]
 # (x and y are pixels; islands may hang off the screen edges on purpose)
 ISLANDS = [
-    [-96, 32, 5, 2, 1],    # big island, cut off at the left
-    [160, 32, 1, 2, 2],    # tall pillar standing in front of it
-    [288, 16, 4, 2, 1],    # big island on the right
-    [556, 64, 1, 1, 2],    # thin strip peeking in at the right edge
+    [-64, 32, 5, 2, 1],    # big island, cut off at the left
+    [192, 32, 1, 2, 2],    # tall pillar standing in front of its right edge
+    [320, 16, 6, 2, 1],    # big island in the middle
+    [832, 48, 2, 1, 2],    # island peeking in at the right edge
 ]
 
 # --- setup ---
@@ -84,14 +84,14 @@ winner = ""
 # each button is [rectangle, label]
 # home buttons are blue-button images, so the rects match the image (384x128)
 home_buttons = [
-    [pygame.Rect(108, 250, 384, 128), "2 Players"],
-    [pygame.Rect(108, 400, 384, 128), "Play vs Computer"],
+    [pygame.Rect((WIDTH - 384) // 2, 250, 384, 128), "2 Players"],
+    [pygame.Rect((WIDTH - 384) // 2, 410, 384, 128), "Play vs Computer"],
 ]
 
 difficulty_buttons = [
-    [pygame.Rect(150, 230, 300, 70), "Easy"],
-    [pygame.Rect(150, 330, 300, 70), "Medium"],
-    [pygame.Rect(150, 430, 300, 70), "Impossible"],
+    [pygame.Rect((WIDTH - 300) // 2, 250, 300, 70), "Easy"],
+    [pygame.Rect((WIDTH - 300) // 2, 350, 300, 70), "Medium"],
+    [pygame.Rect((WIDTH - 300) // 2, 450, 300, 70), "Impossible"],
 ]
 
 # the restart button in the top-left corner of the game page
@@ -161,18 +161,16 @@ def draw_scenery():
     frame = (pygame.time.get_ticks() // 120) % FOAM_FRAMES
     foam = foam_sheet.subsurface((frame * FOAM_SIZE, 0, FOAM_SIZE, FOAM_SIZE))
 
-    # 1) foam first, under every island's border tiles
+    # 1) foam first, only under each island's bottom row (where rock meets water)
     for x, y, cols, mid_rows, cliff_rows in ISLANDS:
         rows = island_rows(mid_rows, cliff_rows, cols == 1)
-        for ty in range(len(rows)):
-            for tx in range(cols):
-                on_border = tx == 0 or ty == 0 or tx == cols - 1 or ty == len(rows) - 1
-                if on_border:
-                    # the foam picture is bigger than a tile, so shift it
-                    # so its middle sits on the tile's middle
-                    fx = x + tx * TILE - (FOAM_SIZE - TILE) // 2
-                    fy = y + ty * TILE - (FOAM_SIZE - TILE) // 2
-                    screen.blit(foam, (fx, fy))
+        ty = len(rows) - 1
+        for tx in range(cols):
+            # the foam picture is bigger than a tile, so shift it
+            # so its middle sits on the tile's middle
+            fx = x + tx * TILE - (FOAM_SIZE - TILE) // 2
+            fy = y + ty * TILE - (FOAM_SIZE - TILE) // 2
+            screen.blit(foam, (fx, fy))
 
     # 2) then every island's terrain tiles
     for x, y, cols, mid_rows, cliff_rows in ISLANDS:
@@ -295,7 +293,7 @@ while running:
         draw_text("TIC TAC TOE", title_font, BUTTON_TEXT, (WIDTH // 2, 76))
 
         # paper panel behind the mode buttons
-        screen.blit(panel_paper, ((WIDTH - 512) // 2, 150))
+        screen.blit(panel_paper, ((WIDTH - 512) // 2, 170))
 
         # mode buttons (pressed-looking when hovered)
         for rect, label in home_buttons:
