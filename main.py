@@ -515,7 +515,7 @@ while running:
         draw_scenery()
 
         # the title banner, centered near the top of the screen
-        title_rect = title_banner.get_rect(midtop=(WIDTH // 2, 15))
+        title_rect = title_banner.get_rect(midtop=(WIDTH // 2, 68))
         screen.blit(title_banner, title_rect)
         draw_text("TIC TAC TOE", title_font, TITLE_COLOR, title_rect.center)
 
