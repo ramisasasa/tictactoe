@@ -159,7 +159,7 @@ def load_board(path, box_size):
 board_wood = load_board("assets/boardwood.png", BOARD_SIZE)
 
 # the X and O marks, sized to sit inside a cell with a little breathing room
-MARK_BOX = round(CELL * 0.8)
+MARK_BOX = round(CELL * 0.55)
 mark_x = load_fitted("assets/swords.png", MARK_BOX)
 mark_o = load_fitted("assets/target.png", MARK_BOX)
 MARKS = {"X": mark_x, "O": mark_o}
