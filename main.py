@@ -22,25 +22,31 @@ CELL = BOARD_SIZE // 3                # one cell is 150x150
 LINE_WIDTH = 6
 
 # --- home page scenery ---
-# the background picture (736x864) is drawn at full size, centered, and
-# shifted up a little so the island fills the screen and only a strip of
-# water is left at the bottom
-BG_X = (WIDTH - 736) // 2
-BG_Y = -30
+# the background picture (736x864) is drawn at full size. BG_X centers the
+# island itself (it is not centered inside its own picture), and BG_Y
+# shifts the picture up so there is less sky and more water on screen.
+BG_X = 66
+BG_Y = -60
 
 SPRITE = 192                               # foam / archer frames are 192x192
 FOAM_FRAMES = 16                           # the foam sheet holds 16 frames
 ANIM_SPEED = 120                           # ms per animation frame
 
-# centers of the foam splashes, along the island's waterline
+# positions measured inside the background picture; drawing adds BG_X/BG_Y,
+# so moving the picture moves everything with it automatically
 FOAM_SPOTS = [
-    (166, 612), (245, 612), (324, 618), (403, 618), (482, 618),
-    (561, 618), (640, 612), (719, 606), (758, 562),
+    (84, 642), (163, 642), (242, 648), (321, 648), (400, 648),
+    (479, 648), (558, 642), (637, 636), (676, 592),
 ]
+ARCHER_BLUE_SPOT = (112, 228)
+ARCHER_RED_SPOT = (673, 183)
 
-# where the archers stand (the point under their feet)
-ARCHER_BLUE_SPOT = (194, 198)
-ARCHER_RED_SPOT = (755, 153)
+# --- the wood-framed button plates ---
+PLATE_DARK = (62, 48, 60)        # dark outline
+PLATE_WOOD = (217, 172, 114)     # tan frame
+PLATE_WOOD_HOVER = (240, 205, 150)
+PLATE_BLUE = (72, 100, 128)
+PLATE_RED = (199, 75, 85)
 
 # --- setup ---
 pygame.init()
@@ -101,11 +107,10 @@ turn = "X"
 # how the game ended: "" = still going, "X" or "O" = that player won, "Tie"
 winner = ""
 
-# each button is [rectangle, label]
-# home buttons are blue-button images, so the rects match the image (384x128)
+# home buttons are [rectangle, label, plate color]
 home_buttons = [
-    [pygame.Rect((WIDTH - 384) // 2, 320, 384, 128), "2 Players"],
-    [pygame.Rect((WIDTH - 384) // 2, 465, 384, 128), "Play vs Computer"],
+    [pygame.Rect((WIDTH - 384) // 2, 345, 384, 80), "2 Players", PLATE_BLUE],
+    [pygame.Rect((WIDTH - 384) // 2, 450, 384, 80), "Play vs Computer", PLATE_RED],
 ]
 
 difficulty_buttons = [
@@ -172,7 +177,7 @@ def draw_scenery():
 
     foam = foam_sheet.subsurface(((frame % FOAM_FRAMES) * 192, 0, 192, 192))
     for cx, cy in FOAM_SPOTS:
-        screen.blit(foam, (cx - SPRITE // 2, cy - SPRITE // 2))
+        screen.blit(foam, (BG_X + cx - SPRITE // 2, BG_Y + cy - SPRITE // 2))
 
     # the island picture (its water pixels were made transparent at load,
     # so the foam peeks out from underneath the cliffs)
@@ -182,7 +187,19 @@ def draw_scenery():
     shot = frame % 8
     for frames, (fx, fy) in [(archer_blue, ARCHER_BLUE_SPOT), (archer_red, ARCHER_RED_SPOT)]:
         # position the frame so the archer's feet land on the spot
-        screen.blit(frames[shot], (fx - SPRITE // 2, fy - int(SPRITE * 0.78)))
+        screen.blit(frames[shot], (BG_X + fx - SPRITE // 2, BG_Y + fy - int(SPRITE * 0.78)))
+
+
+def draw_plate(rect, color, hovered):
+    """A wood-framed colored plate, like a sign lying on the grass."""
+    if hovered:
+        wood = PLATE_WOOD_HOVER
+    else:
+        wood = PLATE_WOOD
+    pygame.draw.rect(screen, PLATE_DARK, rect.inflate(12, 12), border_radius=18)
+    pygame.draw.rect(screen, wood, rect.inflate(6, 6), border_radius=15)
+    pygame.draw.rect(screen, PLATE_DARK, rect, border_radius=12)
+    pygame.draw.rect(screen, color, rect.inflate(-6, -6), border_radius=10)
 
 
 def check_winner():
@@ -242,7 +259,7 @@ while running:
 
         elif event.type == pygame.MOUSEBUTTONDOWN:
             if page == "home":
-                for rect, label in home_buttons:
+                for rect, label, color in home_buttons:
                     if rect.collidepoint(event.pos):
                         if label == "Play vs Computer":
                             page = "difficulty"
@@ -283,16 +300,9 @@ while running:
     if page == "home":
         draw_scenery()
 
-        # title on the red ribbon
-        screen.blit(ribbon_title, ((WIDTH - 512) // 2, 20))
-        draw_text("TIC TAC TOE", title_font, BUTTON_TEXT, (WIDTH // 2, 76))
-
-        # mode buttons (pressed-looking when hovered)
-        for rect, label in home_buttons:
-            if rect.collidepoint(mouse_pos):
-                screen.blit(button_blue_hover, rect)
-            else:
-                screen.blit(button_blue, rect)
+        # mode buttons: wood-framed plates (no title yet, coming later)
+        for rect, label, color in home_buttons:
+            draw_plate(rect, color, rect.collidepoint(mouse_pos))
             draw_text(label, button_font, BUTTON_TEXT, rect.center)
 
     elif page == "difficulty":
