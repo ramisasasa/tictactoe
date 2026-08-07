@@ -79,7 +79,7 @@ ARCHER_RED_SPOT = (672, 174)
 BUTTON_W = 352                   # the button images are 352x80
 BUTTON_H = 80
 BUTTON_CX = 450                  # middle of the island
-BACK_W = 170                     # the return banner, sized to keep its shape
+BACK_SIZE = 64                   # the back arrow icon is 64x64
 
 # --- setup ---
 pygame.init()
@@ -156,10 +156,11 @@ def load_fitted(path, box_size):
     return pygame.transform.smoothscale(trimmed, size)
 
 
-back_banner = load_fitted("assets/return.png", BACK_W)
-BACK_H = back_banner.get_height()
+title_banner = load_fitted("assets/title.png", 420)
+
+icon_back = pygame.image.load("assets/icon_back.png").convert_alpha()
 # a slightly bigger copy to show when the mouse is over it
-back_banner_big = pygame.transform.smoothscale(back_banner, (BACK_W + 14, BACK_H + 14))
+icon_back_big = pygame.transform.scale(icon_back, (BACK_SIZE + 10, BACK_SIZE + 10))
 
 
 def load_board(path, box_size):
@@ -216,18 +217,22 @@ home_buttons = [
      "Play vs Computer", btn_red, btn_red_hover],
 ]
 
+# same style and image as the home page buttons, just three in a column
 difficulty_buttons = [
-    [pygame.Rect((WIDTH - 300) // 2, 250, 300, 70), "Easy"],
-    [pygame.Rect((WIDTH - 300) // 2, 350, 300, 70), "Medium"],
-    [pygame.Rect((WIDTH - 300) // 2, 450, 300, 70), "Impossible"],
+    [pygame.Rect(BUTTON_CX - BUTTON_W // 2, 250, BUTTON_W, BUTTON_H),
+     "Easy", btn_blue, btn_blue_hover],
+    [pygame.Rect(BUTTON_CX - BUTTON_W // 2, 350, BUTTON_W, BUTTON_H),
+     "Medium", btn_blue, btn_blue_hover],
+    [pygame.Rect(BUTTON_CX - BUTTON_W // 2, 450, BUTTON_W, BUTTON_H),
+     "Impossible", btn_red, btn_red_hover],
 ]
 
 # the restart button in the top-right corner of the game page
 # (170x42 to match the baked wood-bar image)
 restart_rect = pygame.Rect(WIDTH - 190, 25, 170, 42)
 
-# the return banner, in the top-left corner of every page except home
-back_rect = pygame.Rect(20, 20, BACK_W, BACK_H)
+# the back arrow, in the top-left corner of every page except home
+back_rect = pygame.Rect(20, 20, BACK_SIZE, BACK_SIZE)
 
 
 def new_board():
@@ -238,12 +243,11 @@ def new_board():
 
 
 def draw_back_button(mouse_pos):
-    """The return banner in the top-left corner; it grows a little when hovered."""
+    """The arrow in the top-left corner; it grows a little when hovered."""
     if back_rect.collidepoint(mouse_pos):
-        screen.blit(back_banner_big, (back_rect.x - 7, back_rect.y - 7))
+        screen.blit(icon_back_big, (back_rect.x - 5, back_rect.y - 5))
     else:
-        screen.blit(back_banner, back_rect)
-    draw_text("Back", small_font, TITLE_COLOR, back_rect.center)
+        screen.blit(icon_back, back_rect)
 
 
 def draw_text(text, font, color, center):
@@ -254,13 +258,13 @@ def draw_text(text, font, color, center):
 
 
 def draw_buttons(buttons, mouse_pos):
-    """Draw every button in the list, highlighting the hovered one."""
-    for rect, label in buttons:
+    """Draw every button in the list, swapping in its hover image when
+    the mouse is over it - same pattern as the home page buttons."""
+    for rect, label, image, hover_image in buttons:
         if rect.collidepoint(mouse_pos):
-            color = BUTTON_HOVER
+            screen.blit(hover_image, rect)
         else:
-            color = BUTTON_COLOR
-        pygame.draw.rect(screen, color, rect, border_radius=10)
+            screen.blit(image, rect)
         draw_text(label, button_font, BUTTON_TEXT, rect.center)
 
 
@@ -462,7 +466,7 @@ while running:
                 if back_rect.collidepoint(event.pos):
                     page = "home"
                 else:
-                    for rect, label in difficulty_buttons:
+                    for rect, label, image, hover_image in difficulty_buttons:
                         if rect.collidepoint(event.pos):
                             mode = label
                             page = "game"
@@ -505,7 +509,12 @@ while running:
     if page == "home":
         draw_scenery()
 
-        # mode buttons from the asset pack (no title yet, coming later)
+        # the title banner, centered near the top of the screen
+        title_rect = title_banner.get_rect(midtop=(WIDTH // 2, 15))
+        screen.blit(title_banner, title_rect)
+        draw_text("TIC TAC TOE", title_font, TITLE_COLOR, title_rect.center)
+
+        # mode buttons from the asset pack
         for rect, label, image, hover_image in home_buttons:
             if rect.collidepoint(mouse_pos):
                 screen.blit(hover_image, rect)
@@ -514,7 +523,7 @@ while running:
             draw_text(label, button_font, BUTTON_TEXT, rect.center)
 
     elif page == "difficulty":
-        screen.fill(BACKGROUND)
+        draw_battlefield()
         draw_text("Choose Difficulty", title_font, TITLE_COLOR, (WIDTH // 2, 130))
         draw_buttons(difficulty_buttons, mouse_pos)
         draw_back_button(mouse_pos)
