@@ -21,16 +21,25 @@ BOARD_Y = 130                         # top edge
 CELL = BOARD_SIZE // 3                # one cell is 150x150
 LINE_WIDTH = 6
 
-# --- water foam animation (home page) ---
-FOAM_SIZE = 192                            # one foam frame is 192x192
-FOAM_FRAMES = 16                           # the sheet holds 16 frames in a row
+# --- home page scenery ---
+# the background picture is 736x864; scaled to fit the window height it
+# becomes 596x700, centered horizontally
+BG_W, BG_H = 596, 700
+BG_X = (WIDTH - BG_W) // 2
 
-# where to draw foam: under the islands' cliff bases in background.png
+SPRITE = 156                               # 192px sprites scaled to match the bg
+FOAM_FRAMES = 16                           # the foam sheet holds 16 frames
+ANIM_SPEED = 120                           # ms per animation frame
+
+# centers of the foam splashes, along the island's waterline
 FOAM_SPOTS = [
-    (-128, 272), (-64, 272), (0, 272), (64, 272), (128, 272), (192, 272),
-    (256, 272), (288, 336), (384, 240), (448, 240), (512, 240), (576, 240),
-    (640, 240), (704, 240), (816, 336), (880, 336),
+    (220, 520), (284, 520), (348, 525), (412, 525), (476, 525),
+    (540, 525), (604, 520), (668, 515), (700, 480),
 ]
+
+# where the archers stand (the point under their feet)
+ARCHER_BLUE_SPOT = (243, 185)
+ARCHER_RED_SPOT = (697, 148)
 
 # --- setup ---
 pygame.init()
@@ -40,7 +49,31 @@ clock = pygame.time.Clock()
 
 # --- images ---
 background = pygame.image.load("assets/background.png").convert_alpha()
+# the water in the picture is painted in one exact color; turn every pixel
+# of that color transparent so the animated foam can show through under it
+pixels = pygame.PixelArray(background)
+pixels.replace(pygame.Color(71, 171, 169, 255), pygame.Color(0, 0, 0, 0))
+del pixels
+background = pygame.transform.smoothscale(background, (BG_W, BG_H))
+
 foam_sheet = pygame.image.load("assets/water_foam.png").convert_alpha()
+
+
+def load_archer(path, flip):
+    """Cut the 8 shooting frames out of an archer sheet, scaled to fit."""
+    sheet = pygame.image.load(path).convert_alpha()
+    frames = []
+    for i in range(8):
+        frame = sheet.subsurface((i * 192, 0, 192, 192))
+        frame = pygame.transform.smoothscale(frame, (SPRITE, SPRITE))
+        if flip:
+            frame = pygame.transform.flip(frame, True, False)
+        frames.append(frame)
+    return frames
+
+
+archer_blue = load_archer("assets/archer_blue.png", False)  # faces right
+archer_red = load_archer("assets/archer_red.png", True)     # flipped to face left
 ribbon_title = pygame.image.load("assets/ribbon_title.png").convert_alpha()
 panel_paper = pygame.image.load("assets/panel_paper.png").convert_alpha()
 button_blue = pygame.image.load("assets/button_blue.png").convert_alpha()
@@ -72,8 +105,8 @@ winner = ""
 # each button is [rectangle, label]
 # home buttons are blue-button images, so the rects match the image (384x128)
 home_buttons = [
-    [pygame.Rect((WIDTH - 384) // 2, 250, 384, 128), "2 Players"],
-    [pygame.Rect((WIDTH - 384) // 2, 410, 384, 128), "Play vs Computer"],
+    [pygame.Rect((WIDTH - 384) // 2, 320, 384, 128), "2 Players"],
+    [pygame.Rect((WIDTH - 384) // 2, 465, 384, 128), "Play vs Computer"],
 ]
 
 difficulty_buttons = [
@@ -132,18 +165,26 @@ def clicked_cell(pos):
 
 
 def draw_scenery():
-    """Water color, animated foam, then the island picture on top."""
+    """Water color, animated foam, the island picture, then the archers."""
     screen.fill(WATER_COLOR)
 
-    # which foam frame to show right now (changes over time = animation)
-    frame = (pygame.time.get_ticks() // 120) % FOAM_FRAMES
-    foam = foam_sheet.subsurface((frame * FOAM_SIZE, 0, FOAM_SIZE, FOAM_SIZE))
-    for fx, fy in FOAM_SPOTS:
-        screen.blit(foam, (fx, fy))
+    # which animation frame to show right now (changes over time = animation)
+    frame = (pygame.time.get_ticks() // ANIM_SPEED) % FOAM_FRAMES
 
-    # the islands (background.png is transparent where the water is,
+    foam = foam_sheet.subsurface((frame % FOAM_FRAMES) * 192, 0, 192, 192)
+    foam = pygame.transform.smoothscale(foam, (SPRITE, SPRITE))
+    for cx, cy in FOAM_SPOTS:
+        screen.blit(foam, (cx - SPRITE // 2, cy - SPRITE // 2))
+
+    # the island picture (its water pixels were made transparent at load,
     # so the foam peeks out from underneath the cliffs)
-    screen.blit(background, (0, 0))
+    screen.blit(background, (BG_X, 0))
+
+    # archers shooting at each other from the tower tops (8-frame loop)
+    shot = frame % 8
+    for frames, (fx, fy) in [(archer_blue, ARCHER_BLUE_SPOT), (archer_red, ARCHER_RED_SPOT)]:
+        # position the frame so the archer's feet land on the spot
+        screen.blit(frames[shot], (fx - SPRITE // 2, fy - int(SPRITE * 0.78)))
 
 
 def check_winner():
@@ -247,9 +288,6 @@ while running:
         # title on the red ribbon
         screen.blit(ribbon_title, ((WIDTH - 512) // 2, 20))
         draw_text("TIC TAC TOE", title_font, BUTTON_TEXT, (WIDTH // 2, 76))
-
-        # paper panel behind the mode buttons
-        screen.blit(panel_paper, ((WIDTH - 512) // 2, 170))
 
         # mode buttons (pressed-looking when hovered)
         for rect, label in home_buttons:
