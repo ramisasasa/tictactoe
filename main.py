@@ -9,7 +9,6 @@ BUTTON_COLOR = (150, 110, 70)
 BUTTON_HOVER = (185, 140, 95)
 BUTTON_TEXT = (255, 255, 255)
 TITLE_COLOR = (90, 60, 40)
-GRID_COLOR = (56, 34, 28)
 FPS = 60
 
 # --- board layout ---
@@ -17,16 +16,14 @@ BOARD_SIZE = 585                      # the whole wood board image, frame includ
 BOARD_X = (WIDTH - BOARD_SIZE) // 2   # left edge (centers it)
 BOARD_Y = 95                          # top edge
 
-# the wood texture has a decorative frame baked in - corner ornaments (frost
-# tufts, rivets) bulge further inward than the plain edges, so hugging the
-# border tightly kept clipping them. A single generous inset on every side,
-# checked directly at the pixels involved, is what actually stays clear.
-PLAY_INSET = 90
-PLAY_SIZE = BOARD_SIZE - 2 * PLAY_INSET
-PLAY_X = BOARD_X + PLAY_INSET
-PLAY_Y = BOARD_Y + PLAY_INSET
+# this board image already has its own 9 equal cells drawn in (dividers and
+# all), so the play area is measured directly from where those dividers
+# actually are, rather than an inset guess - clicks and marks then land
+# exactly on the artist's own grid instead of a separately-drawn one
+PLAY_X = BOARD_X + 52
+PLAY_Y = BOARD_Y + 38
+PLAY_SIZE = 476
 CELL = PLAY_SIZE // 3                 # one cell's size
-LINE_WIDTH = 6
 
 # --- game page battlefield scenery ---
 GRASS_TILE = 64                       # one grass tile in the tilemap
@@ -149,11 +146,21 @@ def load_fitted(path, box_size):
     return pygame.transform.smoothscale(trimmed, size)
 
 
-board_wood = load_trimmed("assets/woodboard.png", (BOARD_SIZE, BOARD_SIZE))
+def load_board(path, box_size):
+    """Like load_fitted, but centers the un-distorted image on a full
+    box_size x box_size canvas, so its own drawn grid stays perfectly
+    square instead of getting stretched to fill a mismatched aspect ratio."""
+    fitted = load_fitted(path, box_size)
+    canvas = pygame.Surface((box_size, box_size), pygame.SRCALPHA)
+    canvas.blit(fitted, ((box_size - fitted.get_width()) // 2, (box_size - fitted.get_height()) // 2))
+    return canvas
+
+
+board_wood = load_board("assets/boardwood.png", BOARD_SIZE)
 
 # the X and O marks, sized to sit inside a cell with a little breathing room
 MARK_BOX = round(CELL * 0.8)
-mark_x = load_fitted("assets/arrows1.png", MARK_BOX)
+mark_x = load_fitted("assets/swords.png", MARK_BOX)
 mark_o = load_fitted("assets/target.png", MARK_BOX)
 MARKS = {"X": mark_x, "O": mark_o}
 
@@ -256,16 +263,8 @@ def draw_battlefield():
 
 
 def draw_grid():
-    """Draw the wood board, then thin seam lines across the play surface."""
+    """Draw the wood board - its own art already has the 9 cells divided."""
     screen.blit(board_wood, (BOARD_X, BOARD_Y))
-    for i in range(1, 3):
-        # vertical line number i (stays within the inset play surface,
-        # not the decorative frame around it)
-        x = PLAY_X + i * CELL
-        pygame.draw.line(screen, GRID_COLOR, (x, PLAY_Y), (x, PLAY_Y + PLAY_SIZE), LINE_WIDTH)
-        # horizontal line number i
-        y = PLAY_Y + i * CELL
-        pygame.draw.line(screen, GRID_COLOR, (PLAY_X, y), (PLAY_X + PLAY_SIZE, y), LINE_WIDTH)
 
 
 def clicked_cell(pos):
