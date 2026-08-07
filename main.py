@@ -1,13 +1,10 @@
 import pygame
 import random
 
-# --- settings (placeholder colors/sizes, we'll style this later) ---
+# --- settings ---
 WIDTH = 900
 HEIGHT = 700
-BACKGROUND = (240, 230, 200)
 WATER_COLOR = (71, 171, 169)
-BUTTON_COLOR = (150, 110, 70)
-BUTTON_HOVER = (185, 140, 95)
 BUTTON_TEXT = (255, 255, 255)
 TITLE_COLOR = (90, 60, 40)
 FPS = 60
@@ -172,10 +169,17 @@ def load_board(path, box_size):
 
 board_wood = load_board("assets/boardwood.png", BOARD_SIZE)
 
-# the X and O marks, sized to sit inside a cell with a little breathing room
-# sized off the smallest cell, so even the tightest cell has clear margin
-smallest_cell = min(COL_BOUNDS[i + 1] - COL_BOUNDS[i] for i in range(3))
-smallest_cell = min(smallest_cell, min(ROW_BOUNDS[i + 1] - ROW_BOUNDS[i] for i in range(3)))
+# the X and O marks, sized to sit inside a cell with a little breathing
+# room - found by checking all 3 column widths and 3 row heights and
+# keeping the smallest one, so even the tightest cell has clear margin
+smallest_cell = COL_BOUNDS[1] - COL_BOUNDS[0]
+for i in range(3):
+    col_width = COL_BOUNDS[i + 1] - COL_BOUNDS[i]
+    if col_width < smallest_cell:
+        smallest_cell = col_width
+    row_height = ROW_BOUNDS[i + 1] - ROW_BOUNDS[i]
+    if row_height < smallest_cell:
+        smallest_cell = row_height
 MARK_BOX = round(smallest_cell * 0.55)
 mark_x = load_fitted("assets/swords.png", MARK_BOX)
 mark_o = load_fitted("assets/target.png", MARK_BOX)
@@ -203,6 +207,12 @@ turn = "X"
 
 # how the game ended: "" = still going, "X" or "O" = that player won, "Tie"
 winner = ""
+
+# the moment (in milliseconds since the game started) the computer is
+# allowed to actually play its move - gives it a short "thinking" pause
+# instead of answering instantly. Only used in vs-computer modes.
+COMPUTER_DELAY = 1000
+computer_ready_at = 0
 
 # home buttons are [rectangle, label, normal image, hover image]
 home_buttons = [
@@ -237,6 +247,12 @@ def new_board():
     return [["", "", ""],
             ["", "", ""],
             ["", "", ""]]
+
+
+def fresh_round():
+    """The board/turn/winner for a brand new round: empty board, X starts,
+    nobody's won yet. Used every time a game begins or restarts."""
+    return new_board(), "X", ""
 
 
 def draw_back_button(mouse_pos):
@@ -460,9 +476,7 @@ while running:
                         else:
                             mode = "2 Players"
                             page = "game"
-                            board = new_board()
-                            turn = "X"
-                            winner = ""
+                            board, turn, winner = fresh_round()
 
             elif page == "difficulty":
                 if back_rect.collidepoint(event.pos):
@@ -472,9 +486,7 @@ while running:
                         if rect.collidepoint(event.pos):
                             mode = label
                             page = "game"
-                            board = new_board()
-                            turn = "X"
-                            winner = ""
+                            board, turn, winner = fresh_round()
 
             elif page == "game":
                 if back_rect.collidepoint(event.pos):
@@ -484,12 +496,14 @@ while running:
                     else:
                         page = "difficulty"
                 elif restart_rect.collidepoint(event.pos):
-                    board = new_board()
-                    turn = "X"
-                    winner = ""
+                    board, turn, winner = fresh_round()
                 else:
+                    # in vs-computer modes, the human is always X - a
+                    # click while it's O's turn (the computer thinking)
+                    # must not place a mark
+                    my_turn = mode == "2 Players" or turn == "X"
                     row, col = clicked_cell(event.pos)
-                    if winner == "" and row != -1 and board[row][col] == "":
+                    if winner == "" and my_turn and row != -1 and board[row][col] == "":
                         board[row][col] = turn
                         winner = check_winner()
                         if turn == "X":
@@ -498,14 +512,18 @@ while running:
                             turn = "X"
 
                         # playing against the computer, and it's the
-                        # computer's (O's) turn now - let it move at once
+                        # computer's (O's) turn now - schedule its move
+                        # for a moment from now instead of answering at once
                         if winner == "" and mode != "2 Players" and turn == "O":
-                            row, col = computer_move()
-                            board[row][col] = "O"
-                            winner = check_winner()
-                            turn = "X"
+                            computer_ready_at = pygame.time.get_ticks() + COMPUTER_DELAY
 
-    # 2) UPDATE (nothing yet)
+    # 2) UPDATE
+    if page == "game" and winner == "" and mode != "2 Players" and turn == "O":
+        if pygame.time.get_ticks() >= computer_ready_at:
+            row, col = computer_move()
+            board[row][col] = "O"
+            winner = check_winner()
+            turn = "X"
 
     # 3) DRAW
     if page == "home":
@@ -532,7 +550,13 @@ while running:
     elif page == "game":
         draw_battlefield()
         if winner == "":
-            draw_text(mode + "  -  " + turn + "'s turn", button_font, TITLE_COLOR, (WIDTH // 2, 50))
+            if mode == "2 Players":
+                status = turn + "'s turn"
+            elif turn == "X":
+                status = "Your turn"
+            else:
+                status = "Computer is thinking..."
+            draw_text(mode + "  -  " + status, button_font, TITLE_COLOR, (WIDTH // 2, 50))
         elif winner == "Tie":
             draw_text("It's a tie!", title_font, TITLE_COLOR, (WIDTH // 2, 50))
         else:
