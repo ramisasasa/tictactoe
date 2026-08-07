@@ -511,6 +511,10 @@ while running:
     if page == "home":
         draw_scenery()
 
+        # the title is baked into the background - just add the text,
+        # centered on the blank parchment banner
+        draw_text("TIC TAC TOE", title_font, TITLE_COLOR, (440, 114))
+
         # mode buttons from the asset pack
         for rect, label, image, hover_image in home_buttons:
             if rect.collidepoint(mouse_pos):
