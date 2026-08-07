@@ -155,9 +155,6 @@ def load_fitted(path, box_size):
     size = (round(trimmed.get_width() * scale), round(trimmed.get_height() * scale))
     return pygame.transform.smoothscale(trimmed, size)
 
-
-title_banner = load_fitted("assets/title.png", 420)
-
 icon_back = pygame.image.load("assets/icon_back.png").convert_alpha()
 # a slightly bigger copy to show when the mouse is over it
 icon_back_big = pygame.transform.scale(icon_back, (BACK_SIZE + 10, BACK_SIZE + 10))
@@ -513,11 +510,6 @@ while running:
     # 3) DRAW
     if page == "home":
         draw_scenery()
-
-        # the title banner, centered near the top of the screen
-        title_rect = title_banner.get_rect(midtop=(WIDTH // 2, 68))
-        screen.blit(title_banner, title_rect)
-        draw_text("TIC TAC TOE", title_font, TITLE_COLOR, title_rect.center)
 
         # mode buttons from the asset pack
         for rect, label, image, hover_image in home_buttons:
