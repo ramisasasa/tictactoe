@@ -15,10 +15,19 @@ O_COLOR = (170, 70, 60)
 FPS = 60
 
 # --- board layout ---
-BOARD_SIZE = 450                      # the grid is 450x450 pixels
-BOARD_X = (WIDTH - BOARD_SIZE) // 2   # left edge (centers it: 75)
-BOARD_Y = 130                         # top edge
-CELL = BOARD_SIZE // 3                # one cell is 150x150
+BOARD_SIZE = 585                      # the whole wood board image, frame included
+BOARD_X = (WIDTH - BOARD_SIZE) // 2   # left edge (centers it)
+BOARD_Y = 95                          # top edge
+
+# the wood texture has a decorative frame baked in - clicks, grid lines and
+# marks must stay inside the actual brown play surface, not the frame, so
+# everything below uses this smaller, inset rectangle instead of the board's
+# full size
+PLAY_INSET = 40
+PLAY_SIZE = BOARD_SIZE - 2 * PLAY_INSET
+PLAY_X = BOARD_X + PLAY_INSET
+PLAY_Y = BOARD_Y + PLAY_INSET
+CELL = PLAY_SIZE // 3                 # one cell's size
 LINE_WIDTH = 6
 
 # --- home page scenery ---
@@ -94,7 +103,7 @@ icon_back_big = pygame.transform.scale(icon_back, (BACK_SIZE + 10, BACK_SIZE + 1
 title_font = pygame.font.SysFont(None, 70)
 button_font = pygame.font.SysFont(None, 40)
 small_font = pygame.font.SysFont(None, 32)
-mark_font = pygame.font.SysFont(None, 150)
+mark_font = pygame.font.SysFont(None, 165)
 
 # which page we are on: "home", "difficulty" or "game"
 page = "home"
@@ -172,23 +181,25 @@ def draw_buttons(buttons, mouse_pos):
 
 
 def draw_grid():
-    """Draw the wood board, then thin seam lines to mark the 9 cells."""
+    """Draw the wood board, then thin seam lines across the play surface."""
     screen.blit(board_wood, (BOARD_X, BOARD_Y))
     for i in range(1, 3):
-        # vertical line number i
-        x = BOARD_X + i * CELL
-        pygame.draw.line(screen, GRID_COLOR, (x, BOARD_Y), (x, BOARD_Y + BOARD_SIZE), LINE_WIDTH)
+        # vertical line number i (stays within the inset play surface,
+        # not the decorative frame around it)
+        x = PLAY_X + i * CELL
+        pygame.draw.line(screen, GRID_COLOR, (x, PLAY_Y), (x, PLAY_Y + PLAY_SIZE), LINE_WIDTH)
         # horizontal line number i
-        y = BOARD_Y + i * CELL
-        pygame.draw.line(screen, GRID_COLOR, (BOARD_X, y), (BOARD_X + BOARD_SIZE, y), LINE_WIDTH)
+        y = PLAY_Y + i * CELL
+        pygame.draw.line(screen, GRID_COLOR, (PLAY_X, y), (PLAY_X + PLAY_SIZE, y), LINE_WIDTH)
 
 
 def clicked_cell(pos):
     """Turn a mouse position into (row, col), or (-1, -1) if off the board."""
-    col = (pos[0] - BOARD_X) // CELL
-    row = (pos[1] - BOARD_Y) // CELL
-    if col < 0 or col > 2 or row < 0 or row > 2:
+    x, y = pos
+    if not (PLAY_X <= x < PLAY_X + PLAY_SIZE and PLAY_Y <= y < PLAY_Y + PLAY_SIZE):
         return -1, -1
+    col = (x - PLAY_X) // CELL
+    row = (y - PLAY_Y) // CELL
     return row, col
 
 
@@ -252,8 +263,8 @@ def draw_marks():
             mark = board[row][col]
             if mark == "":
                 continue
-            center_x = BOARD_X + col * CELL + CELL // 2
-            center_y = BOARD_Y + row * CELL + CELL // 2
+            center_x = PLAY_X + col * CELL + CELL // 2
+            center_y = PLAY_Y + row * CELL + CELL // 2
             if mark == "X":
                 color = X_COLOR
             else:
