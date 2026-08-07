@@ -45,9 +45,9 @@ FOAM_SPOTS = [
 ARCHER_BLUE_SPOT = (113, 228)
 ARCHER_RED_SPOT = (672, 174)
 
-BUTTON_W = 320                   # the button images are 320x96
-BUTTON_H = 96
-BUTTON_CX = 441                  # middle of the grass field (not of the window)
+BUTTON_W = 352                   # the button images are 352x80
+BUTTON_H = 80
+BUTTON_CX = 450                  # middle of the island
 BACK_SIZE = 64                   # the back arrow icon is 64x64
 
 # --- setup ---
@@ -114,9 +114,11 @@ winner = ""
 
 # home buttons are [rectangle, label, normal image, hover image]
 home_buttons = [
-    [pygame.Rect(BUTTON_CX - BUTTON_W // 2, 325, BUTTON_W, BUTTON_H),
+    # the button art has ~9px of clear space top and bottom, so the rects
+    # sit close together to keep the gap between them looking small
+    [pygame.Rect(BUTTON_CX - BUTTON_W // 2, 345, BUTTON_W, BUTTON_H),
      "2 Players", btn_blue, btn_blue_hover],
-    [pygame.Rect(BUTTON_CX - BUTTON_W // 2, 435, BUTTON_W, BUTTON_H),
+    [pygame.Rect(BUTTON_CX - BUTTON_W // 2, 421, BUTTON_W, BUTTON_H),
      "Play vs Computer", btn_red, btn_red_hover],
 ]
 
