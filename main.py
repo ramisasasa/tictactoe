@@ -35,11 +35,11 @@ ANIM_SPEED = 120                           # ms per animation frame
 # positions measured inside the background picture; drawing adds BG_X/BG_Y,
 # so moving the picture moves everything with it automatically
 FOAM_SPOTS = [
-    (84, 642), (163, 642), (242, 648), (321, 648), (400, 648),
-    (479, 648), (558, 642), (637, 636), (676, 592),
+    (90, 645), (170, 652), (250, 658), (330, 658), (410, 658),
+    (490, 658), (570, 650), (650, 640),
 ]
-ARCHER_BLUE_SPOT = (112, 228)
-ARCHER_RED_SPOT = (673, 183)
+ARCHER_BLUE_SPOT = (113, 228)
+ARCHER_RED_SPOT = (672, 174)
 
 # --- the wood-framed button plates ---
 PLATE_DARK = (62, 48, 60)        # dark outline
