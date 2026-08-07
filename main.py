@@ -21,27 +21,15 @@ BOARD_Y = 130                         # top edge
 CELL = BOARD_SIZE // 3                # one cell is 150x150
 LINE_WIDTH = 6
 
-# --- scenery layout (home page) ---
-TILE = 64                                  # one terrain tile is 64x64 pixels
+# --- water foam animation (home page) ---
 FOAM_SIZE = 192                            # one foam frame is 192x192
 FOAM_FRAMES = 16                           # the sheet holds 16 frames in a row
 
-# where the elevated-island tiles live in the tilemap (tile coordinates):
-# columns 5,6,7 are the left edge / middle / right edge of a wide island,
-# column 8 is the 1-tile-wide pillar version
-ROW_GRASS_TOP = 0      # grass with a bushy top edge
-ROW_GRASS_MID = 1      # plain grass
-ROW_GRASS_BUSH = 2     # the plateau's bushy bottom edge (pillars use row 3)
-ROW_CLIFF_WALL = 4     # rocky cliff wall (for taller cliffs)
-ROW_CLIFF_BASE = 5     # rocky cliff base with rounded feet
-
-# the coastline: each island is [x, y, columns, middle rows, cliff rows]
-# (x and y are pixels; islands may hang off the screen edges on purpose)
-ISLANDS = [
-    [-64, 16, 7, 3, 1],    # big island covering the left, cut off at the edge
-    [352, 16, 1, 3, 2],    # tall pillar overlapping its right edge, going deeper
-    [448, -16, 6, 3, 1],   # big island covering the right, cut off at the top
-    [880, 80, 2, 2, 2],    # lower island peeking in at the right edge
+# where to draw foam: under the islands' cliff bases in background.png
+FOAM_SPOTS = [
+    (-128, 272), (-64, 272), (0, 272), (64, 272), (128, 272), (192, 272),
+    (256, 272), (288, 336), (384, 240), (448, 240), (512, 240), (576, 240),
+    (640, 240), (704, 240), (816, 336), (880, 336),
 ]
 
 # --- setup ---
@@ -51,7 +39,7 @@ pygame.display.set_caption("Tic Tac Toe")
 clock = pygame.time.Clock()
 
 # --- images ---
-tilemap = pygame.image.load("assets/tilemap.png").convert_alpha()
+background = pygame.image.load("assets/background.png").convert_alpha()
 foam_sheet = pygame.image.load("assets/water_foam.png").convert_alpha()
 ribbon_title = pygame.image.load("assets/ribbon_title.png").convert_alpha()
 panel_paper = pygame.image.load("assets/panel_paper.png").convert_alpha()
@@ -143,50 +131,19 @@ def clicked_cell(pos):
     return row, col
 
 
-def island_rows(mid_rows, cliff_rows, narrow):
-    """The tilemap row for each row of an island, from top to bottom."""
-    rows = [ROW_GRASS_TOP]
-    for i in range(mid_rows):
-        rows.append(ROW_GRASS_MID)
-    rows.append(3 if narrow else ROW_GRASS_BUSH)   # pillars use their own edge tile
-    if cliff_rows == 2:
-        rows.append(ROW_CLIFF_WALL)
-    rows.append(ROW_CLIFF_BASE)
-    return rows
-
-
 def draw_scenery():
-    """Draw the whole coastline: foam for every island, then their tiles."""
+    """Water color, animated foam, then the island picture on top."""
+    screen.fill(WATER_COLOR)
+
     # which foam frame to show right now (changes over time = animation)
     frame = (pygame.time.get_ticks() // 120) % FOAM_FRAMES
     foam = foam_sheet.subsurface((frame * FOAM_SIZE, 0, FOAM_SIZE, FOAM_SIZE))
+    for fx, fy in FOAM_SPOTS:
+        screen.blit(foam, (fx, fy))
 
-    # 1) foam first, only under each island's bottom row (where rock meets water)
-    for x, y, cols, mid_rows, cliff_rows in ISLANDS:
-        rows = island_rows(mid_rows, cliff_rows, cols == 1)
-        ty = len(rows) - 1
-        for tx in range(cols):
-            # the foam picture is bigger than a tile, so shift it
-            # so its middle sits on the tile's middle
-            fx = x + tx * TILE - (FOAM_SIZE - TILE) // 2
-            fy = y + ty * TILE - (FOAM_SIZE - TILE) // 2
-            screen.blit(foam, (fx, fy))
-
-    # 2) then every island's terrain tiles
-    for x, y, cols, mid_rows, cliff_rows in ISLANDS:
-        rows = island_rows(mid_rows, cliff_rows, cols == 1)
-        for ty in range(len(rows)):
-            for tx in range(cols):
-                if cols == 1:
-                    sx = 8            # 1-wide pillar tiles
-                elif tx == 0:
-                    sx = 5            # left edge
-                elif tx == cols - 1:
-                    sx = 7            # right edge
-                else:
-                    sx = 6            # middle
-                tile = tilemap.subsurface((sx * TILE, rows[ty] * TILE, TILE, TILE))
-                screen.blit(tile, (x + tx * TILE, y + ty * TILE))
+    # the islands (background.png is transparent where the water is,
+    # so the foam peeks out from underneath the cliffs)
+    screen.blit(background, (0, 0))
 
 
 def check_winner():
@@ -285,7 +242,6 @@ while running:
 
     # 3) DRAW
     if page == "home":
-        screen.fill(WATER_COLOR)
         draw_scenery()
 
         # title on the red ribbon
