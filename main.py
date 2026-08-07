@@ -7,9 +7,9 @@ HEIGHT = 700
 WATER_COLOR = (71, 171, 169)
 BUTTON_TEXT = (255, 255, 255)
 TITLE_COLOR = (90, 60, 40)
-BANNER_TEXT_COLOR = (101, 52, 22)      # a richer chocolate brown for the home page title
-TURN_X_COLOR = (30, 90, 160)           # swords (X) turn - blue
-TURN_O_COLOR = (200, 60, 60)           # target (O) turn - red
+BANNER_TEXT_COLOR = (101, 52, 22)
+TURN_X_COLOR = (30, 90, 160)      # blue
+TURN_O_COLOR = (200, 60, 60)      # red
 FPS = 60
 
 # --- board layout ---
@@ -17,12 +17,7 @@ BOARD_SIZE = 585                      # the whole wood board image, frame includ
 BOARD_X = (WIDTH - BOARD_SIZE) // 2   # left edge (centers it)
 BOARD_Y = 95                          # top edge
 
-# this board image already has its own 9 cells drawn in, and they are not
-# quite equal in size (hand-drawn art) - so instead of one uniform CELL
-# size, these are the 4 actual divider positions measured directly off the
-# artwork, giving 3 column widths and 3 row heights that can each differ
-# slightly. Clicks and marks both use these same boundaries, so whatever
-# the art actually looks like is exactly what responds to a click.
+# divider positions for the board's 9 cells (not perfectly equal - hand-drawn art)
 COL_BOUNDS = [55, 211, 373, 529]
 ROW_BOUNDS = [36, 190, 356, 513]
 
@@ -39,34 +34,23 @@ def cell_center(i, bounds):
     """The midpoint of column/row i, in board-local coordinates."""
     return (bounds[i] + bounds[i + 1]) // 2
 
-# --- game page battlefield scenery ---
-GRASS_TILE = 64                       # one grass tile in the tilemap
-UNIT_SIZE = 110                       # warriors are drawn at this width/height
+# --- battlefield (game page) ---
+GRASS_TILE = 64
+UNIT_SIZE = 110
 UNIT_ANIM_SPEED = 160                 # ms per idle animation frame
-# the character doesn't fill its whole sprite frame - there's empty space
-# below its feet (measured: feet sit at 137 of 192px in the source frame)
-UNIT_FEET_Y = round(137 / 192 * UNIT_SIZE)
+UNIT_FEET_Y = round(137 / 192 * UNIT_SIZE)   # feet position within the sprite frame
 
-# feet positions (x, y) for the units flanking the board - blue on the
-# left facing right, red on the right facing left
 BLUE_UNIT_SPOTS = [(78, 210), (78, 400), (78, 590)]
 RED_UNIT_SPOTS = [(822, 210), (822, 400), (822, 590)]
 
 # --- home page scenery ---
-# the background picture (736x864) is drawn at full size. BG_X centers the
-# island itself (it is not centered inside its own picture), and BG_Y
-# shifts the picture up so there is less sky and more water on screen.
-BG_X = 66
-BG_Y = -60
+BG_X = 66     # centers the island within the background picture
+BG_Y = -60    # shifts the picture up: less sky, more water on screen
 
 SPRITE = 192                               # foam / archer frames are 192x192
-FOAM_FRAMES = 16                           # the foam sheet holds 16 frames
+FOAM_FRAMES = 16
 ANIM_SPEED = 120                           # ms per animation frame
 
-# positions measured inside the background picture; drawing adds BG_X/BG_Y,
-# so moving the picture moves everything with it automatically
-# each spot is the center of a foam patch, placed so only its bottom fringe
-# shows below the rock (the rest hides behind the cliff)
 FOAM_SPOTS = [
     (40, 614), (96, 627), (152, 622), (208, 626),
     (264, 641), (320, 642), (376, 645), (432, 645),
@@ -76,10 +60,10 @@ FOAM_SPOTS = [
 ARCHER_BLUE_SPOT = (113, 228)
 ARCHER_RED_SPOT = (672, 174)
 
-BUTTON_W = 352                   # the button images are 352x80
+BUTTON_W = 352
 BUTTON_H = 80
 BUTTON_CX = 450                  # middle of the island
-BACK_SIZE = 64                   # the back arrow icon is 64x64
+BACK_SIZE = 64
 
 # --- setup ---
 pygame.init()
@@ -89,8 +73,7 @@ clock = pygame.time.Clock()
 
 # --- images ---
 background = pygame.image.load("assets/background.png").convert_alpha()
-# the water in the picture is painted in one exact color; turn every pixel
-# of that color transparent so the animated foam can show through under it
+# make the water transparent so the animated foam shows through
 pixels = pygame.PixelArray(background)
 pixels.replace(pygame.Color(71, 171, 169, 255), pygame.Color(0, 0, 0, 0))
 del pixels
@@ -117,9 +100,6 @@ btn_blue_hover = pygame.image.load("assets/btn_blue_hover.png").convert_alpha()
 btn_red = pygame.image.load("assets/btn_red.png").convert_alpha()
 btn_red_hover = pygame.image.load("assets/btn_red_hover.png").convert_alpha()
 bar_restart = pygame.image.load("assets/bar_restart.png").convert_alpha()
-# the battlefield flanking the game-page board: a tileable grass square cut
-# from the terrain sheet, a soft shadow to ground each unit, and a row of
-# idle warriors standing guard on each side
 grass_tile = pygame.image.load("assets/tilemap.png").convert_alpha().subsurface((64, 64, 64, 64))
 unit_shadow = pygame.image.load("assets/unit_shadow.png").convert_alpha()
 unit_shadow = pygame.transform.scale(unit_shadow, (UNIT_SIZE, UNIT_SIZE // 3))
@@ -136,8 +116,7 @@ warrior_red = load_unit("assets/warrior_red_idle.png", True)     # flipped to fa
 
 
 def load_trimmed(path, size):
-    """Load an image, crop away its own transparent padding, then scale it
-    to exactly `size` (width, height) so it fills whatever box we place it in."""
+    """Crop an image's transparent padding, then scale it to exactly `size`."""
     image = pygame.image.load(path).convert_alpha()
     mask = pygame.mask.from_surface(image, 8)
     content = max(mask.get_bounding_rects(), key=lambda r: r.width * r.height)
@@ -145,8 +124,7 @@ def load_trimmed(path, size):
 
 
 def load_fitted(path, box_size):
-    """Load an image, crop its padding, then scale it to fit inside a
-    box_size x box_size square without stretching it out of shape."""
+    """Crop an image's padding, then scale it to fit inside box_size without stretching."""
     image = pygame.image.load(path).convert_alpha()
     mask = pygame.mask.from_surface(image, 8)
     content = max(mask.get_bounding_rects(), key=lambda r: r.width * r.height)
@@ -156,14 +134,11 @@ def load_fitted(path, box_size):
     return pygame.transform.smoothscale(trimmed, size)
 
 icon_back = pygame.image.load("assets/icon_back.png").convert_alpha()
-# a slightly bigger copy to show when the mouse is over it
 icon_back_big = pygame.transform.scale(icon_back, (BACK_SIZE + 10, BACK_SIZE + 10))
 
 
 def load_board(path, box_size):
-    """Like load_fitted, but centers the un-distorted image on a full
-    box_size x box_size canvas, so its own drawn grid stays perfectly
-    square instead of getting stretched to fill a mismatched aspect ratio."""
+    """Like load_fitted, but centers the result on a full box_size square canvas."""
     fitted = load_fitted(path, box_size)
     canvas = pygame.Surface((box_size, box_size), pygame.SRCALPHA)
     canvas.blit(fitted, ((box_size - fitted.get_width()) // 2, (box_size - fitted.get_height()) // 2))
@@ -172,9 +147,7 @@ def load_board(path, box_size):
 
 board_wood = load_board("assets/boardwood.png", BOARD_SIZE)
 
-# the X and O marks, sized to sit inside a cell with a little breathing
-# room - found by checking all 3 column widths and 3 row heights and
-# keeping the smallest one, so even the tightest cell has clear margin
+# X/O mark size: the smallest cell dimension, so every cell keeps clear margin
 smallest_cell = COL_BOUNDS[1] - COL_BOUNDS[0]
 for i in range(3):
     col_width = COL_BOUNDS[i + 1] - COL_BOUNDS[i]
@@ -193,41 +166,29 @@ title_font = pygame.font.Font(FONT, 64)
 button_font = pygame.font.Font(FONT, 34)
 small_font = pygame.font.Font(FONT, 26)
 
-# which page we are on: "home", "difficulty" or "game"
-page = "home"
+# --- game state ---
+page = "home"          # "home", "difficulty" or "game"
+mode = ""               # "2 Players", "Easy", "Medium" or "Impossible"
 
-# which mode was picked: "2 Players", "Easy", "Medium" or "Impossible"
-mode = ""
-
-# the board: 3 rows of 3 cells, "" means empty.
-# board[row][col] -> board[0][0] is top-left, board[2][2] is bottom-right
+# board[row][col]: "" = empty, board[0][0] is top-left, board[2][2] is bottom-right
 board = [["", "", ""],
          ["", "", ""],
          ["", "", ""]]
 
-# whose turn it is: "X" or "O"
-turn = "X"
+turn = "X"              # whose turn it is
+winner = ""              # "", "X", "O" or "Tie"
 
-# how the game ended: "" = still going, "X" or "O" = that player won, "Tie"
-winner = ""
-
-# the moment (in milliseconds since the game started) the computer is
-# allowed to actually play its move - gives it a short "thinking" pause
-# instead of answering instantly. Only used in vs-computer modes.
-COMPUTER_DELAY = 1000
+COMPUTER_DELAY = 1000    # ms the computer waits before playing its move
 computer_ready_at = 0
 
-# home buttons are [rectangle, label, normal image, hover image]
+# each button is [rectangle, label, normal image, hover image]
 home_buttons = [
-    # the button art has ~9px of clear space top and bottom, so the rects
-    # sit close together to keep the gap between them looking small
     [pygame.Rect(BUTTON_CX - BUTTON_W // 2, 345, BUTTON_W, BUTTON_H),
      "2 Players", btn_blue, btn_blue_hover],
     [pygame.Rect(BUTTON_CX - BUTTON_W // 2, 421, BUTTON_W, BUTTON_H),
      "Play vs Computer", btn_red, btn_red_hover],
 ]
 
-# same style and image as the home page buttons, just three in a column
 difficulty_buttons = [
     [pygame.Rect(BUTTON_CX - BUTTON_W // 2, 250, BUTTON_W, BUTTON_H),
      "Easy", btn_blue, btn_blue_hover],
@@ -237,11 +198,7 @@ difficulty_buttons = [
      "Impossible", btn_blue, btn_blue_hover],
 ]
 
-# the restart button in the top-right corner of the game page
-# (170x42 to match the baked wood-bar image)
 restart_rect = pygame.Rect(WIDTH - 190, 25, 170, 42)
-
-# the back arrow, in the top-left corner of every page except home
 back_rect = pygame.Rect(20, 20, BACK_SIZE, BACK_SIZE)
 
 
@@ -253,8 +210,7 @@ def new_board():
 
 
 def fresh_round():
-    """The board/turn/winner for a brand new round: empty board, X starts,
-    nobody's won yet. Used every time a game begins or restarts."""
+    """The board/turn/winner for a brand new round."""
     return new_board(), "X", ""
 
 
@@ -274,8 +230,7 @@ def draw_text(text, font, color, center):
 
 
 def draw_buttons(buttons, mouse_pos):
-    """Draw every button in the list, swapping in its hover image when
-    the mouse is over it - same pattern as the home page buttons."""
+    """Draw every button in the list, swapping in its hover image when hovered."""
     for rect, label, image, hover_image in buttons:
         if rect.collidepoint(mouse_pos):
             screen.blit(hover_image, rect)
@@ -300,9 +255,6 @@ def draw_battlefield():
         for fx, fy in spots:
             shadow_rect = unit_shadow.get_rect(center=(fx, fy))
             screen.blit(unit_shadow, shadow_rect)
-            # the sprite frame has empty space below the character's own
-            # feet, so its actual feet sit at UNIT_FEET_Y, not the frame's
-            # bottom edge
             unit_rect = frames[frame].get_rect(midtop=(fx, fy - UNIT_FEET_Y))
             screen.blit(frames[frame], unit_rect)
 
@@ -323,53 +275,45 @@ def clicked_cell(pos):
 
 
 def draw_scenery():
-    """Water color, animated foam, the island picture, then the archers."""
+    """Water, animated foam, the island picture, then the archers."""
     screen.fill(WATER_COLOR)
 
-    # which animation frame to show right now (changes over time = animation)
     frame = (pygame.time.get_ticks() // ANIM_SPEED) % FOAM_FRAMES
-
     foam = foam_sheet.subsurface(((frame % FOAM_FRAMES) * 192, 0, 192, 192))
     for cx, cy in FOAM_SPOTS:
         screen.blit(foam, (BG_X + cx - SPRITE // 2, BG_Y + cy - SPRITE // 2))
 
-    # the island picture (its water pixels were made transparent at load,
-    # so the foam peeks out from underneath the cliffs)
     screen.blit(background, (BG_X, BG_Y))
 
-    # archers shooting at each other from the tower tops (8-frame loop)
     shot = frame % 8
     for frames, (fx, fy) in [(archer_blue, ARCHER_BLUE_SPOT), (archer_red, ARCHER_RED_SPOT)]:
-        # position the frame so the archer's feet land on the spot
         screen.blit(frames[shot], (BG_X + fx - SPRITE // 2, BG_Y + fy - int(SPRITE * 0.78)))
 
 
 def check_winner():
     """Look at the board and return "X", "O", "Tie", or "" (game still going)."""
-    # 1) rows: three equal marks side by side
+    # rows
     for row in range(3):
         if board[row][0] != "" and board[row][0] == board[row][1] == board[row][2]:
             return board[row][0]
 
-    # 2) columns: three equal marks stacked up
+    # columns
     for col in range(3):
         if board[0][col] != "" and board[0][col] == board[1][col] == board[2][col]:
             return board[0][col]
 
-    # 3) the two diagonals
+    # diagonals
     if board[1][1] != "":
         if board[0][0] == board[1][1] == board[2][2]:
             return board[1][1]
         if board[0][2] == board[1][1] == board[2][0]:
             return board[1][1]
 
-    # 4) any empty cell left? then the game is still going
+    # still going, or a tie
     for row in range(3):
         for col in range(3):
             if board[row][col] == "":
                 return ""
-
-    # 5) board full and nobody won
     return "Tie"
 
 
@@ -384,9 +328,7 @@ def empty_cells():
 
 
 def find_winning_move(mark):
-    """If placing `mark` in some empty cell would win right now, return
-    that (row, col). We just try each spot, ask check_winner(), then put
-    it back empty - if nothing wins, return None."""
+    """The (row, col) where `mark` would win right now, or None."""
     for row, col in empty_cells():
         board[row][col] = mark
         won = check_winner() == mark
@@ -397,12 +339,12 @@ def find_winning_move(mark):
 
 
 def easy_move():
-    """Just pick a random empty cell."""
+    """Pick a random empty cell."""
     return random.choice(empty_cells())
 
 
 def medium_move():
-    """Win if we can, block if we must, otherwise play randomly."""
+    """Win if possible, block if necessary, otherwise random."""
     win = find_winning_move("O")
     if win is not None:
         return win
@@ -413,8 +355,7 @@ def medium_move():
 
 
 def impossible_move():
-    """Win if we can, block if we must. Otherwise take the strongest open
-    spot: the center first, then a corner, then whatever's left."""
+    """Win, block, then center > corner > random."""
     win = find_winning_move("O")
     if win is not None:
         return win
@@ -493,7 +434,6 @@ while running:
 
             elif page == "game":
                 if back_rect.collidepoint(event.pos):
-                    # step back to where this game was started from
                     if mode == "2 Players":
                         page = "home"
                     else:
@@ -501,9 +441,7 @@ while running:
                 elif restart_rect.collidepoint(event.pos):
                     board, turn, winner = fresh_round()
                 else:
-                    # in vs-computer modes, the human is always X - a
-                    # click while it's O's turn (the computer thinking)
-                    # must not place a mark
+                    # human is always X in vs-computer modes
                     my_turn = mode == "2 Players" or turn == "X"
                     row, col = clicked_cell(event.pos)
                     if winner == "" and my_turn and row != -1 and board[row][col] == "":
@@ -514,9 +452,6 @@ while running:
                         else:
                             turn = "X"
 
-                        # playing against the computer, and it's the
-                        # computer's (O's) turn now - schedule its move
-                        # for a moment from now instead of answering at once
                         if winner == "" and mode != "2 Players" and turn == "O":
                             computer_ready_at = pygame.time.get_ticks() + COMPUTER_DELAY
 
@@ -531,12 +466,8 @@ while running:
     # 3) DRAW
     if page == "home":
         draw_scenery()
-
-        # the title is baked into the background - just add the text,
-        # centered on the blank parchment banner
         draw_text("TIC TAC TOE", title_font, BANNER_TEXT_COLOR, (440, 114))
 
-        # mode buttons from the asset pack
         for rect, label, image, hover_image in home_buttons:
             if rect.collidepoint(mouse_pos):
                 screen.blit(hover_image, rect)
@@ -552,7 +483,6 @@ while running:
 
     elif page == "game":
         draw_battlefield()
-        # swords (X) get the blue text, target (O) gets the red text
         turn_color = TURN_X_COLOR if turn == "X" else TURN_O_COLOR
         if winner == "":
             if mode == "2 Players":
@@ -570,7 +500,6 @@ while running:
         draw_grid()
         draw_marks()
 
-        # the restart button: the wood bar, a touch bigger on hover
         if restart_rect.collidepoint(mouse_pos):
             bar = pygame.transform.scale(bar_restart, (180, 45))
             bar_rect = bar.get_rect(center=restart_rect.center)
