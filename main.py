@@ -16,14 +16,27 @@ BOARD_SIZE = 585                      # the whole wood board image, frame includ
 BOARD_X = (WIDTH - BOARD_SIZE) // 2   # left edge (centers it)
 BOARD_Y = 95                          # top edge
 
-# this board image already has its own 9 equal cells drawn in (dividers and
-# all), so the play area is measured directly from where those dividers
-# actually are, rather than an inset guess - clicks and marks then land
-# exactly on the artist's own grid instead of a separately-drawn one
-PLAY_X = BOARD_X + 52
-PLAY_Y = BOARD_Y + 38
-PLAY_SIZE = 476
-CELL = PLAY_SIZE // 3                 # one cell's size
+# this board image already has its own 9 cells drawn in, and they are not
+# quite equal in size (hand-drawn art) - so instead of one uniform CELL
+# size, these are the 4 actual divider positions measured directly off the
+# artwork, giving 3 column widths and 3 row heights that can each differ
+# slightly. Clicks and marks both use these same boundaries, so whatever
+# the art actually looks like is exactly what responds to a click.
+COL_BOUNDS = [55, 211, 373, 529]
+ROW_BOUNDS = [36, 190, 356, 513]
+
+
+def cell_index(pos, bounds):
+    """Which of the 3 columns/rows a board-local coordinate falls in, or -1."""
+    for i in range(3):
+        if bounds[i] <= pos < bounds[i + 1]:
+            return i
+    return -1
+
+
+def cell_center(i, bounds):
+    """The midpoint of column/row i, in board-local coordinates."""
+    return (bounds[i] + bounds[i + 1]) // 2
 
 # --- game page battlefield scenery ---
 GRASS_TILE = 64                       # one grass tile in the tilemap
@@ -159,7 +172,10 @@ def load_board(path, box_size):
 board_wood = load_board("assets/boardwood.png", BOARD_SIZE)
 
 # the X and O marks, sized to sit inside a cell with a little breathing room
-MARK_BOX = round(CELL * 0.55)
+# sized off the smallest cell, so even the tightest cell has clear margin
+smallest_cell = min(COL_BOUNDS[i + 1] - COL_BOUNDS[i] for i in range(3))
+smallest_cell = min(smallest_cell, min(ROW_BOUNDS[i + 1] - ROW_BOUNDS[i] for i in range(3)))
+MARK_BOX = round(smallest_cell * 0.55)
 mark_x = load_fitted("assets/swords.png", MARK_BOX)
 mark_o = load_fitted("assets/target.png", MARK_BOX)
 MARKS = {"X": mark_x, "O": mark_o}
@@ -270,10 +286,10 @@ def draw_grid():
 def clicked_cell(pos):
     """Turn a mouse position into (row, col), or (-1, -1) if off the board."""
     x, y = pos
-    if not (PLAY_X <= x < PLAY_X + PLAY_SIZE and PLAY_Y <= y < PLAY_Y + PLAY_SIZE):
+    col = cell_index(x - BOARD_X, COL_BOUNDS)
+    row = cell_index(y - BOARD_Y, ROW_BOUNDS)
+    if col == -1 or row == -1:
         return -1, -1
-    col = (x - PLAY_X) // CELL
-    row = (y - PLAY_Y) // CELL
     return row, col
 
 
@@ -335,8 +351,8 @@ def draw_marks():
             mark = board[row][col]
             if mark == "":
                 continue
-            center_x = PLAY_X + col * CELL + CELL // 2
-            center_y = PLAY_Y + row * CELL + CELL // 2
+            center_x = BOARD_X + cell_center(col, COL_BOUNDS)
+            center_y = BOARD_Y + cell_center(row, ROW_BOUNDS)
             image = MARKS[mark]
             rect = image.get_rect(center=(center_x, center_y))
             screen.blit(image, rect)
