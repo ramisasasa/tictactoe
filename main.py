@@ -34,15 +34,20 @@ ANIM_SPEED = 120                           # ms per animation frame
 
 # positions measured inside the background picture; drawing adds BG_X/BG_Y,
 # so moving the picture moves everything with it automatically
+# each spot is the center of a foam patch, placed so only its bottom fringe
+# shows below the rock (the rest hides behind the cliff)
 FOAM_SPOTS = [
-    (90, 645), (170, 652), (250, 658), (330, 658), (410, 658),
-    (490, 658), (570, 650), (650, 640),
+    (40, 614), (96, 627), (152, 622), (208, 626),
+    (264, 641), (320, 642), (376, 645), (432, 645),
+    (488, 646), (544, 627), (600, 629), (656, 626),
+    (712, 635),
 ]
 ARCHER_BLUE_SPOT = (113, 228)
 ARCHER_RED_SPOT = (672, 174)
 
-BUTTON_W = 224                   # the button images are 224x64
-BUTTON_H = 64
+BUTTON_W = 320                   # the button images are 320x96
+BUTTON_H = 96
+BUTTON_CX = 441                  # middle of the grass field (not of the window)
 BACK_SIZE = 64                   # the back arrow icon is 64x64
 
 # --- setup ---
@@ -109,9 +114,9 @@ winner = ""
 
 # home buttons are [rectangle, label, normal image, hover image]
 home_buttons = [
-    [pygame.Rect((WIDTH - BUTTON_W) // 2, 360, BUTTON_W, BUTTON_H),
+    [pygame.Rect(BUTTON_CX - BUTTON_W // 2, 325, BUTTON_W, BUTTON_H),
      "2 Players", btn_blue, btn_blue_hover],
-    [pygame.Rect((WIDTH - BUTTON_W) // 2, 445, BUTTON_W, BUTTON_H),
+    [pygame.Rect(BUTTON_CX - BUTTON_W // 2, 435, BUTTON_W, BUTTON_H),
      "Play vs Computer", btn_red, btn_red_hover],
 ]
 
@@ -318,7 +323,7 @@ while running:
                 screen.blit(hover_image, rect)
             else:
                 screen.blit(image, rect)
-            draw_text(label, small_font, BUTTON_TEXT, rect.center)
+            draw_text(label, button_font, BUTTON_TEXT, rect.center)
 
     elif page == "difficulty":
         screen.fill(BACKGROUND)
