@@ -127,9 +127,11 @@ mark_x = load_fitted("assets/arrows1.png", MARK_BOX)
 mark_o = load_fitted("assets/target.png", MARK_BOX)
 MARKS = {"X": mark_x, "O": mark_o}
 
-title_font = pygame.font.SysFont(None, 70)
-button_font = pygame.font.SysFont(None, 40)
-small_font = pygame.font.SysFont(None, 32)
+FONT = "assets/fonts/Pixtura12.ttf"
+FONT_CONDENSED = "assets/fonts/Pixtura12Condensed.ttf"
+title_font = pygame.font.Font(FONT, 64)
+button_font = pygame.font.Font(FONT_CONDENSED, 34)
+small_font = pygame.font.Font(FONT_CONDENSED, 26)
 
 # which page we are on: "home", "difficulty" or "game"
 page = "home"
