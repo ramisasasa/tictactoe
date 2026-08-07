@@ -17,14 +17,21 @@ BOARD_SIZE = 585                      # the whole wood board image, frame includ
 BOARD_X = (WIDTH - BOARD_SIZE) // 2   # left edge (centers it)
 BOARD_Y = 95                          # top edge
 
-# the wood texture has a decorative frame baked in - clicks, grid lines and
-# marks must stay inside the actual brown play surface, not the frame, so
-# everything below uses this smaller, inset rectangle instead of the board's
-# full size
-PLAY_INSET = 45
-PLAY_SIZE = BOARD_SIZE - 2 * PLAY_INSET
-PLAY_X = BOARD_X + PLAY_INSET
-PLAY_Y = BOARD_Y + PLAY_INSET
+# the wood texture has a decorative frame baked in, and it isn't the same
+# thickness on every side (the top rim is much thicker than the thin bottom
+# edge) - clicks, grid lines and marks must stay inside the actual brown
+# surface, not the frame, so everything below uses this smaller rectangle,
+# measured separately per side and then centered as a square inside them
+PLAY_INSET_TOP = 58
+PLAY_INSET_BOTTOM = 14
+PLAY_INSET_LEFT = 45
+PLAY_INSET_RIGHT = 54
+
+_raw_w = BOARD_SIZE - PLAY_INSET_LEFT - PLAY_INSET_RIGHT
+_raw_h = BOARD_SIZE - PLAY_INSET_TOP - PLAY_INSET_BOTTOM
+PLAY_SIZE = min(_raw_w, _raw_h)       # a square that fits inside every side's inset
+PLAY_X = BOARD_X + PLAY_INSET_LEFT + (_raw_w - PLAY_SIZE) // 2
+PLAY_Y = BOARD_Y + PLAY_INSET_TOP + (_raw_h - PLAY_SIZE) // 2
 CELL = PLAY_SIZE // 3                 # one cell's size
 LINE_WIDTH = 6
 
