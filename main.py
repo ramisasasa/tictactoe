@@ -38,10 +38,10 @@ ROW_CLIFF_BASE = 5     # rocky cliff base with rounded feet
 # the coastline: each island is [x, y, columns, middle rows, cliff rows]
 # (x and y are pixels; islands may hang off the screen edges on purpose)
 ISLANDS = [
-    [-64, 32, 5, 2, 1],    # big island, cut off at the left
-    [192, 32, 1, 2, 2],    # tall pillar standing in front of its right edge
-    [320, 16, 6, 2, 1],    # big island in the middle
-    [832, 48, 2, 1, 2],    # island peeking in at the right edge
+    [-64, 16, 7, 3, 1],    # big island covering the left, cut off at the edge
+    [352, 16, 1, 3, 2],    # tall pillar overlapping its right edge, going deeper
+    [448, -16, 6, 3, 1],   # big island covering the right, cut off at the top
+    [880, 80, 2, 2, 2],    # lower island peeking in at the right edge
 ]
 
 # --- setup ---
