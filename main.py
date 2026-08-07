@@ -41,12 +41,8 @@ FOAM_SPOTS = [
 ARCHER_BLUE_SPOT = (113, 228)
 ARCHER_RED_SPOT = (672, 174)
 
-# --- the wood-framed button plates ---
-PLATE_DARK = (62, 48, 60)        # dark outline
-PLATE_WOOD = (217, 172, 114)     # tan frame
-PLATE_WOOD_HOVER = (240, 205, 150)
-PLATE_BLUE = (72, 100, 128)
-PLATE_RED = (199, 75, 85)
+BUTTON_W = 224                   # the button images are 224x64
+BUTTON_H = 64
 
 # --- setup ---
 pygame.init()
@@ -79,10 +75,10 @@ def load_archer(path, flip):
 
 archer_blue = load_archer("assets/archer_blue.png", False)  # faces right
 archer_red = load_archer("assets/archer_red.png", True)     # flipped to face left
-ribbon_title = pygame.image.load("assets/ribbon_title.png").convert_alpha()
-panel_paper = pygame.image.load("assets/panel_paper.png").convert_alpha()
-button_blue = pygame.image.load("assets/button_blue.png").convert_alpha()
-button_blue_hover = pygame.image.load("assets/button_blue_hover.png").convert_alpha()
+btn_blue = pygame.image.load("assets/btn_blue.png").convert_alpha()
+btn_blue_hover = pygame.image.load("assets/btn_blue_hover.png").convert_alpha()
+btn_red = pygame.image.load("assets/btn_red.png").convert_alpha()
+btn_red_hover = pygame.image.load("assets/btn_red_hover.png").convert_alpha()
 
 title_font = pygame.font.SysFont(None, 70)
 button_font = pygame.font.SysFont(None, 40)
@@ -107,10 +103,12 @@ turn = "X"
 # how the game ended: "" = still going, "X" or "O" = that player won, "Tie"
 winner = ""
 
-# home buttons are [rectangle, label, plate color]
+# home buttons are [rectangle, label, normal image, hover image]
 home_buttons = [
-    [pygame.Rect((WIDTH - 384) // 2, 345, 384, 80), "2 Players", PLATE_BLUE],
-    [pygame.Rect((WIDTH - 384) // 2, 450, 384, 80), "Play vs Computer", PLATE_RED],
+    [pygame.Rect((WIDTH - BUTTON_W) // 2, 360, BUTTON_W, BUTTON_H),
+     "2 Players", btn_blue, btn_blue_hover],
+    [pygame.Rect((WIDTH - BUTTON_W) // 2, 445, BUTTON_W, BUTTON_H),
+     "Play vs Computer", btn_red, btn_red_hover],
 ]
 
 difficulty_buttons = [
@@ -190,16 +188,6 @@ def draw_scenery():
         screen.blit(frames[shot], (BG_X + fx - SPRITE // 2, BG_Y + fy - int(SPRITE * 0.78)))
 
 
-def draw_plate(rect, color, hovered):
-    """A wood-framed colored plate, like a sign lying on the grass."""
-    if hovered:
-        wood = PLATE_WOOD_HOVER
-    else:
-        wood = PLATE_WOOD
-    pygame.draw.rect(screen, PLATE_DARK, rect.inflate(12, 12), border_radius=18)
-    pygame.draw.rect(screen, wood, rect.inflate(6, 6), border_radius=15)
-    pygame.draw.rect(screen, PLATE_DARK, rect, border_radius=12)
-    pygame.draw.rect(screen, color, rect.inflate(-6, -6), border_radius=10)
 
 
 def check_winner():
@@ -259,7 +247,7 @@ while running:
 
         elif event.type == pygame.MOUSEBUTTONDOWN:
             if page == "home":
-                for rect, label, color in home_buttons:
+                for rect, label, image, hover_image in home_buttons:
                     if rect.collidepoint(event.pos):
                         if label == "Play vs Computer":
                             page = "difficulty"
@@ -300,10 +288,13 @@ while running:
     if page == "home":
         draw_scenery()
 
-        # mode buttons: wood-framed plates (no title yet, coming later)
-        for rect, label, color in home_buttons:
-            draw_plate(rect, color, rect.collidepoint(mouse_pos))
-            draw_text(label, button_font, BUTTON_TEXT, rect.center)
+        # mode buttons from the asset pack (no title yet, coming later)
+        for rect, label, image, hover_image in home_buttons:
+            if rect.collidepoint(mouse_pos):
+                screen.blit(hover_image, rect)
+            else:
+                screen.blit(image, rect)
+            draw_text(label, small_font, BUTTON_TEXT, rect.center)
 
     elif page == "difficulty":
         screen.fill(BACKGROUND)
