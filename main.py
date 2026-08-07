@@ -43,6 +43,7 @@ ARCHER_RED_SPOT = (672, 174)
 
 BUTTON_W = 224                   # the button images are 224x64
 BUTTON_H = 64
+BACK_SIZE = 64                   # the back arrow icon is 64x64
 
 # --- setup ---
 pygame.init()
@@ -79,6 +80,9 @@ btn_blue = pygame.image.load("assets/btn_blue.png").convert_alpha()
 btn_blue_hover = pygame.image.load("assets/btn_blue_hover.png").convert_alpha()
 btn_red = pygame.image.load("assets/btn_red.png").convert_alpha()
 btn_red_hover = pygame.image.load("assets/btn_red_hover.png").convert_alpha()
+icon_back = pygame.image.load("assets/icon_back.png").convert_alpha()
+# a slightly bigger copy to show when the mouse is over it
+icon_back_big = pygame.transform.scale(icon_back, (BACK_SIZE + 10, BACK_SIZE + 10))
 
 title_font = pygame.font.SysFont(None, 70)
 button_font = pygame.font.SysFont(None, 40)
@@ -117,8 +121,11 @@ difficulty_buttons = [
     [pygame.Rect((WIDTH - 300) // 2, 450, 300, 70), "Impossible"],
 ]
 
-# the restart button in the top-left corner of the game page
-restart_rect = pygame.Rect(20, 20, 130, 45)
+# the restart button in the top-right corner of the game page
+restart_rect = pygame.Rect(WIDTH - 150, 25, 130, 45)
+
+# the back arrow, in the top-left corner of every page except home
+back_rect = pygame.Rect(20, 20, BACK_SIZE, BACK_SIZE)
 
 
 def new_board():
@@ -126,6 +133,14 @@ def new_board():
     return [["", "", ""],
             ["", "", ""],
             ["", "", ""]]
+
+
+def draw_back_button(mouse_pos):
+    """The arrow in the top-left corner; it grows a little when hovered."""
+    if back_rect.collidepoint(mouse_pos):
+        screen.blit(icon_back_big, (back_rect.x - 5, back_rect.y - 5))
+    else:
+        screen.blit(icon_back, back_rect)
 
 
 def draw_text(text, font, color, center):
@@ -259,16 +274,25 @@ while running:
                             winner = ""
 
             elif page == "difficulty":
-                for rect, label in difficulty_buttons:
-                    if rect.collidepoint(event.pos):
-                        mode = label
-                        page = "game"
-                        board = new_board()
-                        turn = "X"
-                        winner = ""
+                if back_rect.collidepoint(event.pos):
+                    page = "home"
+                else:
+                    for rect, label in difficulty_buttons:
+                        if rect.collidepoint(event.pos):
+                            mode = label
+                            page = "game"
+                            board = new_board()
+                            turn = "X"
+                            winner = ""
 
             elif page == "game":
-                if restart_rect.collidepoint(event.pos):
+                if back_rect.collidepoint(event.pos):
+                    # step back to where this game was started from
+                    if mode == "2 Players":
+                        page = "home"
+                    else:
+                        page = "difficulty"
+                elif restart_rect.collidepoint(event.pos):
                     board = new_board()
                     turn = "X"
                     winner = ""
@@ -300,6 +324,7 @@ while running:
         screen.fill(BACKGROUND)
         draw_text("Choose Difficulty", title_font, TITLE_COLOR, (WIDTH // 2, 130))
         draw_buttons(difficulty_buttons, mouse_pos)
+        draw_back_button(mouse_pos)
 
     elif page == "game":
         screen.fill(BACKGROUND)
@@ -319,6 +344,8 @@ while running:
             color = BUTTON_COLOR
         pygame.draw.rect(screen, color, restart_rect, border_radius=10)
         draw_text("Restart", small_font, BUTTON_TEXT, restart_rect.center)
+
+        draw_back_button(mouse_pos)
 
     pygame.display.flip()
     clock.tick(FPS)
