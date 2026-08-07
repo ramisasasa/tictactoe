@@ -224,7 +224,7 @@ difficulty_buttons = [
     [pygame.Rect(BUTTON_CX - BUTTON_W // 2, 350, BUTTON_W, BUTTON_H),
      "Medium", btn_blue, btn_blue_hover],
     [pygame.Rect(BUTTON_CX - BUTTON_W // 2, 450, BUTTON_W, BUTTON_H),
-     "Impossible", btn_red, btn_red_hover],
+     "Impossible", btn_blue, btn_blue_hover],
 ]
 
 # the restart button in the top-right corner of the game page
@@ -268,11 +268,16 @@ def draw_buttons(buttons, mouse_pos):
         draw_text(label, button_font, BUTTON_TEXT, rect.center)
 
 
-def draw_battlefield():
-    """Tile the grass, then stand a row of warriors on each side of the board."""
+def draw_grass():
+    """Tile the plain grass background across the whole screen."""
     for y in range(0, HEIGHT, GRASS_TILE):
         for x in range(0, WIDTH, GRASS_TILE):
             screen.blit(grass_tile, (x, y))
+
+
+def draw_battlefield():
+    """The grass, plus a row of warriors standing guard on each side."""
+    draw_grass()
 
     frame = (pygame.time.get_ticks() // UNIT_ANIM_SPEED) % 8
     for frames, spots in [(warrior_blue, BLUE_UNIT_SPOTS), (warrior_red, RED_UNIT_SPOTS)]:
@@ -523,7 +528,7 @@ while running:
             draw_text(label, button_font, BUTTON_TEXT, rect.center)
 
     elif page == "difficulty":
-        draw_battlefield()
+        draw_grass()
         draw_text("Choose Difficulty", title_font, TITLE_COLOR, (WIDTH // 2, 130))
         draw_buttons(difficulty_buttons, mouse_pos)
         draw_back_button(mouse_pos)
