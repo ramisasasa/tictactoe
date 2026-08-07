@@ -10,8 +10,6 @@ BUTTON_HOVER = (185, 140, 95)
 BUTTON_TEXT = (255, 255, 255)
 TITLE_COLOR = (90, 60, 40)
 GRID_COLOR = (56, 34, 28)
-X_COLOR = (60, 90, 160)
-O_COLOR = (170, 70, 60)
 FPS = 60
 
 # --- board layout ---
@@ -23,7 +21,7 @@ BOARD_Y = 95                          # top edge
 # marks must stay inside the actual brown play surface, not the frame, so
 # everything below uses this smaller, inset rectangle instead of the board's
 # full size
-PLAY_INSET = 40
+PLAY_INSET = 45
 PLAY_SIZE = BOARD_SIZE - 2 * PLAY_INSET
 PLAY_X = BOARD_X + PLAY_INSET
 PLAY_Y = BOARD_Y + PLAY_INSET
@@ -94,16 +92,44 @@ btn_blue = pygame.image.load("assets/btn_blue.png").convert_alpha()
 btn_blue_hover = pygame.image.load("assets/btn_blue_hover.png").convert_alpha()
 btn_red = pygame.image.load("assets/btn_red.png").convert_alpha()
 btn_red_hover = pygame.image.load("assets/btn_red_hover.png").convert_alpha()
-board_wood = pygame.image.load("assets/board_wood.png").convert_alpha()
 bar_restart = pygame.image.load("assets/bar_restart.png").convert_alpha()
 icon_back = pygame.image.load("assets/icon_back.png").convert_alpha()
 # a slightly bigger copy to show when the mouse is over it
 icon_back_big = pygame.transform.scale(icon_back, (BACK_SIZE + 10, BACK_SIZE + 10))
 
+
+def load_trimmed(path, size):
+    """Load an image, crop away its own transparent padding, then scale it
+    to exactly `size` (width, height) so it fills whatever box we place it in."""
+    image = pygame.image.load(path).convert_alpha()
+    mask = pygame.mask.from_surface(image, 8)
+    content = max(mask.get_bounding_rects(), key=lambda r: r.width * r.height)
+    return pygame.transform.scale(image.subsurface(content), size)
+
+
+def load_fitted(path, box_size):
+    """Load an image, crop its padding, then scale it to fit inside a
+    box_size x box_size square without stretching it out of shape."""
+    image = pygame.image.load(path).convert_alpha()
+    mask = pygame.mask.from_surface(image, 8)
+    content = max(mask.get_bounding_rects(), key=lambda r: r.width * r.height)
+    trimmed = image.subsurface(content)
+    scale = box_size / max(trimmed.get_width(), trimmed.get_height())
+    size = (round(trimmed.get_width() * scale), round(trimmed.get_height() * scale))
+    return pygame.transform.smoothscale(trimmed, size)
+
+
+board_wood = load_trimmed("assets/woodboard.png", (BOARD_SIZE, BOARD_SIZE))
+
+# the X and O marks, sized to sit inside a cell with a little breathing room
+MARK_BOX = round(CELL * 0.8)
+mark_x = load_fitted("assets/arrows1.png", MARK_BOX)
+mark_o = load_fitted("assets/target.png", MARK_BOX)
+MARKS = {"X": mark_x, "O": mark_o}
+
 title_font = pygame.font.SysFont(None, 70)
 button_font = pygame.font.SysFont(None, 40)
 small_font = pygame.font.SysFont(None, 32)
-mark_font = pygame.font.SysFont(None, 165)
 
 # which page we are on: "home", "difficulty" or "game"
 page = "home"
@@ -265,11 +291,9 @@ def draw_marks():
                 continue
             center_x = PLAY_X + col * CELL + CELL // 2
             center_y = PLAY_Y + row * CELL + CELL // 2
-            if mark == "X":
-                color = X_COLOR
-            else:
-                color = O_COLOR
-            draw_text(mark, mark_font, color, (center_x, center_y))
+            image = MARKS[mark]
+            rect = image.get_rect(center=(center_x, center_y))
+            screen.blit(image, rect)
 
 
 # --- game loop ---
